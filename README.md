@@ -3,33 +3,35 @@
 ## Hackathon Reference
 
 This library converts the board hardware tests into reusable, importable
-modules.  Pick the modules your project needs, drop them into the `/lib` folder in
-`CIRCUITPY` drive, and call their APIs from your `code.py`.
+modules.  Pick the modules your project needs, place them flat in the `/lib`
+folder on your `CIRCUITPY` drive (no subdirectories), and call their APIs
+from your `code.py`.
 
 ---
 
 ## Directory Layout
 
-```
-modules/
-├── dev_board/               ← Dev board modules
-│   ├── digital_io.py
-│   ├── analog_io.py
-│   ├── pwm_out.py
-│   ├── cap_touch.py
-│   ├── servo_control.py
-│   ├── uart_comms.py
-│   ├── i2c_bus.py
-│   ├── hid_input.py
-│   ├── cpu_temp.py
-│   ├── ble_uart.py
-│   └── can_bus.py
-└── ruler/              ← Ruler baseboard modules
-    ├── neopixels.py
-    ├── lcd_display.py
-    ├── imu_sensor.py
-    ├── audio_out.py
-    └── sd_card.py
+All modules live flat in `/lib` on the CIRCUITPY drive:
+
+```text
+lib/
+├── digital_io.py        ← Dev board modules
+├── analog_io.py
+├── pwm_out.py
+├── cap_touch.py
+├── servo_control.py
+├── uart_comms.py
+├── i2c_bus.py
+├── spi_bus.py
+├── hid_input.py
+├── cpu_temp.py
+├── ble_uart.py
+├── can_bus.py
+├── neopixels.py         ← Ruler baseboard modules
+├── lcd_display.py
+├── imu_sensor.py
+├── audio_out.py
+└── sd_card.py
 ```
 
 ---
@@ -41,7 +43,7 @@ modules/
 | Module            | Class(es)                                             | What it does                                                                         |
 | ----------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `digital_io`    | `DigitalOutput`, `DigitalInput`, `EdgeDetector` | Read buttons/switches; drive LEDs and relays; detect press/release edges             |
-| `analog_io`     | `AnalogInput`, `AnalogOutput`                     | Read voltages from sensors (A0–A5); output DC voltage from DAC (A5 only)            |
+| `analog_io`     | `AnalogInput`, `AnalogOutput`                     | Read voltages from sensors (A0–A5); output DC voltage from DAC (board.DAC only)     |
 | `pwm_out`       | `PWMOutput`                                         | Variable duty-cycle signal; LED dimming; buzzer tones; motor speed control           |
 | `cap_touch`     | `CapTouch`                                          | Capacitive touch detect/release on board.A5 (CAP1)                                   |
 | `servo_control` | `ServoController`                                   | Position standard RC servo 0°–180°; sweep animations                              |
@@ -49,7 +51,8 @@ modules/
 | `i2c_bus`       | `I2CBus`                                            | Scan I2C bus; raw register reads/writes; returns bus object for Adafruit drivers     |
 | `hid_input`     | `HIDKeyboard`, `HIDMouse`, `JoystickMouse`      | USB HID keyboard typing and key combos; mouse movement and clicks; joystick → mouse |
 | `cpu_temp`      | `CPUTemperature`                                    | On-chip temperature in °C and °F; threshold checks; formatted logging strings      |
-| `ble_uart`      | `BLEUart`                                           | Configure RNBD451 BLE module; send/receive strings wirelessly to a phone or PC       |
+| `ble_uart`      | `BLEUart`                                           | Reset RNBD451 BLE module; send/receive strings wirelessly; connection status tracking |
+| `spi_bus`       | `SPIBus`                                            | General-purpose SPI transactions with automatic CS and bus locking                   |
 | `can_bus`       | `CANBus`                                            | Send and receive CAN frames at 250 kbps; bus state monitoring                        |
 
 ### Ruler Baseboard Modules
@@ -76,7 +79,8 @@ analog_io    ← sensors          pwm_out       → motors, buzzers
 cap_touch    ← touch pad        servo_control → servo position
 imu_sensor   ← motion/tilt      neopixels     → RGB feedback
 i2c_bus      ← I2C devices      lcd_display   → graphics
-uart_comms   ← serial devices   audio_out     → sound / music
+spi_bus      ← SPI devices      audio_out     → sound / music
+uart_comms   ← serial devices
 can_bus      ← CAN network      ble_uart      → wireless data
                                  sd_card       → data logging
                                  hid_input     → PC automation
@@ -86,7 +90,7 @@ can_bus      ← CAN network      ble_uart      → wireless data
 
 ## Installation
 
-1. Copy the module files you need to the /lib folder of your `CIRCUITPY` drive.
+1. Copy the module files you need flat into the `/lib` folder of your `CIRCUITPY` drive (do not use subdirectories).
 2. Import them in `code.py`:
 
 ```python
@@ -134,10 +138,10 @@ from cpu_temp import CPUTemperature
 ble  = BLEUart()
 temp = CPUTemperature()
 
-ble.configure()   # configures RNBD451 and reboots into data mode
-
 while True:
-    ble.send(f"Temp: {temp.formatted_string()}\n")
+    ble.receive()  # process connection status messages
+    if ble.connected:
+        ble.send(f"Temp: {temp.formatted_string()}\n")
     time.sleep(2)
 ```
 
