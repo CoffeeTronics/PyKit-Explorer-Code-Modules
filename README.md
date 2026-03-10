@@ -3,7 +3,7 @@
 ## Hackathon Reference
 
 This library converts the board hardware tests into reusable, importable
-modules.  Pick the modules your project needs, drop them into the
+modules.  Pick the modules your project needs, drop them into the `/lib` folder in
 `CIRCUITPY` drive, and call their APIs from your `code.py`.
 
 ---
