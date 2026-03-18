@@ -1,9 +1,11 @@
 # PyKit Ruler — CircuitPython Module Library
-## Hackathon Reference
+## Workshop/Hackathon Reference
 
-This library converts the board hardware tests into reusable, importable
-modules.  Pick the modules your project needs, place them in the `/API`
-folder on your `CIRCUITPY` drive, and call their APIs from your `code.py`.
+This library provides APIs for all of the hardware on the Microchip Curiosity PyKit Explorer.
+
+- **Module Quick Reference** — find out what each module can do
+- **Choosing Modules for Your Project** — work out which modules you need for a specific purpose
+- **Minimal Examples** — copy-paste starting points to get up and running quickly
 
 ---
 
@@ -122,6 +124,7 @@ can_bus      ← CAN network
 import sys
 sys.path.append("/API")
 
+import board
 from digital_io import DigitalInput, EdgeDetector
 from neopixels  import NeoPixels, RED, GREEN
 from imu_sensor import IMUSensor
@@ -131,12 +134,33 @@ from imu_sensor import IMUSensor
 
 ---
 
+## Minimal Example — Blink the onboard LED
+
+```python
+import sys, time
+sys.path.append("/API")
+
+import board
+from digital_io import DigitalOutput
+
+led = DigitalOutput(board.LED)
+
+while True:
+    led.on()
+    time.sleep(0.5)
+    led.off()
+    time.sleep(0.5)
+```
+
+---
+
 ## Minimal Example — Tilt-controlled NeoPixel colours
 
 ```python
 import sys
 sys.path.append("/API")
 
+import board
 from imu_sensor import IMUSensor
 from neopixels  import NeoPixels, RED, GREEN, BLUE, YELLOW, OFF
 
@@ -165,6 +189,7 @@ while True:
 import sys, time
 sys.path.append("/API")
 
+import board
 from ble_uart import BLEUart
 from cpu_temp import CPUTemperature
 
@@ -184,6 +209,7 @@ while True:
 import sys, time
 sys.path.append("/API")
 
+import board
 from i2c_bus import I2CBus
 from bme680 import BME680Sensor
 from neopixels import NeoPixels, GREEN, YELLOW, RED, BLUE
@@ -214,6 +240,7 @@ while True:
 import sys
 sys.path.append("/API")
 
+import board
 from i2c_bus import I2CBus
 from apds9960 import APDS9960Sensor, GESTURE_UP, GESTURE_DOWN, GESTURE_LEFT, GESTURE_RIGHT
 from audio_out import AudioOutput
@@ -244,6 +271,7 @@ while True:
 import sys, time
 sys.path.append("/API")
 
+import board
 from i2c_bus import I2CBus
 from apds9960 import APDS9960Sensor
 from neopixels import NeoPixels
@@ -263,6 +291,224 @@ while True:
 
 
 
+
+## Minimal Example — Display a BMP image on the LCD
+
+Place your `.bmp` image files in the `/Images` folder on the CIRCUITPY drive.
+
+```python
+import board
+import displayio
+import digitalio
+import adafruit_imageload
+from fourwire import FourWire
+from adafruit_st7789 import ST7789
+
+# LCD backlight (active LOW)
+backlight = digitalio.DigitalInOut(board.LCD_BL)
+backlight.direction = digitalio.Direction.OUTPUT
+backlight.value = False
+
+# Release any existing displays
+displayio.release_displays()
+
+# Display setup
+DISPLAY_WIDTH = 240
+DISPLAY_HEIGHT = 135
+
+spi = board.LCD_SPI()
+display_bus = FourWire(spi, command=board.D4, chip_select=board.LCD_CS)
+display = ST7789(display_bus, rotation=90,
+                 width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT,
+                 rowstart=40, colstart=53)
+
+# Load and display image
+sprite_sheet, palette = adafruit_imageload.load("/Images/Bluey_Family.BMP",
+                                                bitmap=displayio.Bitmap,
+                                                palette=displayio.Palette)
+
+sprite = displayio.TileGrid(sprite_sheet, pixel_shader=palette,
+                            width=1, height=1,
+                            tile_width=DISPLAY_WIDTH,
+                            tile_height=DISPLAY_HEIGHT)
+
+group = displayio.Group()
+group.append(sprite)
+display.root_group = group
+
+# Centre the sprite
+group.x = (DISPLAY_WIDTH - DISPLAY_WIDTH) // 2
+group.y = (DISPLAY_HEIGHT - DISPLAY_HEIGHT) // 2
+
+while True:
+    pass
+```
+
+> **Note:** BMP images should match the display resolution (240×135) for best results.
+> Supported format: indexed colour BMP (16 or 256 colours).
+
+---
+
+## Minimal Example — LCD as a serial terminal
+
+CircuitPython automatically redirects `print()` output to an attached display.
+This example initialises the LCD and then uses `print()` as a simple terminal.
+
+```python
+import time
+import board
+import displayio
+import digitalio
+from fourwire import FourWire
+from adafruit_st7789 import ST7789
+
+# LCD backlight (active LOW)
+backlight = digitalio.DigitalInOut(board.LCD_BL)
+backlight.direction = digitalio.Direction.OUTPUT
+backlight.value = False
+
+# Release any existing displays
+displayio.release_displays()
+
+# Display setup
+DISPLAY_WIDTH = 240
+DISPLAY_HEIGHT = 135
+
+spi = board.LCD_SPI()
+display_bus = FourWire(spi, command=board.D4, chip_select=board.LCD_CS)
+display = ST7789(display_bus, rotation=90,
+                 width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT,
+                 rowstart=40, colstart=53)
+
+x = 0
+
+while True:
+    print("Hello World:", x)
+    x += 1
+    time.sleep(1)
+```
+
+> **Note:** Once the display is initialised, `print()` output appears on both
+> the LCD and the USB serial console automatically.
+
+---
+
+## Minimal Example — Rolling coloured text labels on the LCD
+
+Requires `adafruit_bitmap_font` and `adafruit_display_text` in `/lib`, and a
+`.bdf` font file in the `/Fonts` folder on the CIRCUITPY drive.
+Text strings rotate down through the four lines every second while
+the line colours stay fixed.
+
+```python
+import time
+import board
+import displayio
+import digitalio
+from adafruit_bitmap_font import bitmap_font
+from adafruit_display_text import label
+from adafruit_st7789 import ST7789
+from fourwire import FourWire
+
+# LCD backlight (active LOW)
+backlight = digitalio.DigitalInOut(board.LCD_BL)
+backlight.direction = digitalio.Direction.OUTPUT
+backlight.value = False
+
+# Release any existing displays
+displayio.release_displays()
+
+# Display setup
+DISPLAY_WIDTH = 240
+DISPLAY_HEIGHT = 135
+
+spi = board.LCD_SPI()
+display_bus = FourWire(spi, command=board.D4, chip_select=board.LCD_CS)
+display = ST7789(display_bus, rotation=90,
+                 width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT,
+                 rowstart=40, colstart=53)
+
+# Load font
+font = bitmap_font.load_font("/Fonts/Helvetica-Bold-16.bdf")
+
+# Fixed line colours (purple, blue, red, green)
+LINE_COLORS = [0xFF00FF, 0x0000FF, 0xFF0000, 0x00FF00]
+LINE_Y = [20, 50, 80, 110]
+
+# Create four text labels with fixed colours and positions
+labels = []
+for i in range(4):
+    text_area = label.Label(font, text="", color=LINE_COLORS[i])
+    text_area.x = 0
+    text_area.y = LINE_Y[i]
+    labels.append(text_area)
+
+# Text strings that will roll through the lines
+texts = [
+    "Lorem ipsum dolor sit amet",
+    "consectetur adipiscing elit",
+    "sed do eiusmod tempor",
+    "labore et dolore magna aliqua",
+]
+
+# Build display group
+group = displayio.Group()
+for lbl in labels:
+    group.append(lbl)
+display.root_group = group
+
+# Assign initial text
+for i in range(4):
+    labels[i].text = texts[i]
+
+while True:
+    time.sleep(1)
+    # Rotate text strings: last item moves to front
+    texts = [texts[-1]] + texts[:-1]
+    for i in range(4):
+        labels[i].text = texts[i]
+```
+
+> **Note:** Colour values are 24-bit hex `0xRRGGBB`. Font files (`.bdf`) should be
+> placed in the `/Fonts` folder on the CIRCUITPY drive.
+
+---
+
+## Minimal Example — Concurrent NeoPixel blinks with AsyncRunner
+
+Requires the `asyncio` library in `/lib`.
+
+```python
+import sys
+sys.path.append("/API")
+
+import board
+import neopixel
+from async_tasks import AsyncRunner
+
+pixels = neopixel.NeoPixel(board.NEOPIXEL, 5, brightness=0.05, auto_write=True)
+OFF = (0, 0, 0)
+
+async def blink(pixel: int, interval: float, count: int, color: tuple):
+    for _ in range(count):
+        pixels[pixel] = color
+        await AsyncRunner.sleep(interval)
+        pixels[pixel] = OFF
+        await AsyncRunner.sleep(interval)
+
+runner = AsyncRunner()
+runner.add(blink(0, 0.30, 15, (255, 0, 255)))
+runner.add(blink(1, 0.75, 10, (0, 255, 0)))
+runner.add(blink(2, 1.00, 10, (255, 0, 0)))
+runner.add(blink(3, 0.50, 10, (255, 150, 0)))
+runner.add(blink(4, 0.25, 15, (0, 0, 255)))
+runner.run()
+```
+
+> **Note:** All tasks run cooperatively — use `await AsyncRunner.sleep()` (not
+> `time.sleep()`) to yield control between tasks.
+
+---
 
 - **HID** requires `usb_hid.enable()` in `boot.py`.
 
