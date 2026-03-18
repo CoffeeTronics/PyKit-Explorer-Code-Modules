@@ -510,6 +510,75 @@ runner.run()
 
 ---
 
+## Minimal Example — CPU temperature on LCD, serial, and BLE
+
+Combines `cpu_temp`, `lcd_display`, and `ble_uart` to read the CPU temperature
+and display it on the LCD with colour-coded thresholds, print to the serial
+console, and send over BLE. Requires `adafruit_bitmap_font` and
+`adafruit_display_text` in `/lib`.
+
+```python
+import sys, time
+sys.path.append("/API")
+
+import displayio
+from adafruit_bitmap_font import bitmap_font
+from adafruit_display_text import label
+from cpu_temp import CPUTemperature
+from lcd_display import LCDDisplay
+from ble_uart import BLEUart
+
+# Colour thresholds
+GREEN  = 0x00FF00  # < 30 C
+ORANGE = 0xFF8000  # 30–35 C
+RED    = 0xFF0000  # > 35 C
+
+# Initialise hardware
+lcd  = LCDDisplay()
+temp = CPUTemperature()
+ble  = BLEUart()
+
+# Set up text label on LCD
+font = bitmap_font.load_font("/Fonts/Helvetica-Bold-16.bdf")
+text_area = label.Label(font, text="", color=GREEN)
+text_area.x = 10
+text_area.y = 67
+
+group = displayio.Group()
+group.append(text_area)
+lcd.display.root_group = group
+
+while True:
+    # Process incoming BLE data
+    incoming = ble.receive()
+    if incoming:
+        print(f"BLE RX: {incoming}")
+
+    c = temp.celsius
+
+    # Set label colour based on temperature
+    if c < 30:
+        text_area.color = GREEN
+    elif c <= 35:
+        text_area.color = ORANGE
+    else:
+        text_area.color = RED
+
+    # Update LCD label
+    text_area.text = f"CPU Temp: {c:.1f} C"
+
+    # Print to serial console
+    print(text_area.text)
+
+    # Send over BLE if connected
+    if ble.connected:
+        ble.send(f"{text_area.text}\n")
+
+    time.sleep(1)
+```
+
+---
+
 - **HID** requires `usb_hid.enable()` in `boot.py`.
 
 - **WAV files** must be mono, 16-bit PCM, ≤ 22 050 Hz.
