@@ -54,6 +54,14 @@ class BLEUart:
     """
 
     def __init__(self, baudrate: int = 115200):
+        # Release pins in case they are still held from a previous run
+        for pin in (board.BLE_TX, board.BLE_RX, board.BLE_CLR):
+            try:
+                tmp = digitalio.DigitalInOut(pin)
+                tmp.deinit()
+            except ValueError:
+                pass
+
         self._uart = busio.UART(board.BLE_TX, board.BLE_RX,
                                 baudrate=baudrate, timeout=0.5)
         self._reset_pin = digitalio.DigitalInOut(board.BLE_CLR)
