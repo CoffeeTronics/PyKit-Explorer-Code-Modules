@@ -213,17 +213,23 @@ class APDS9960Sensor:
         return self._apds.color_data
 
     def color_as_neopixel(self) -> tuple:
-        """Convert the 16-bit RGBC reading to an 8-bit (R, G, B) NeoPixel tuple.
+        """Convert the RGBC reading to an 8-bit (R, G, B) NeoPixel tuple.
 
-        Shifts each 16-bit channel right by 8 bits to produce 8-bit values
-        suitable for neopixel.NeoPixel.
+        Normalises each channel against the clear channel so the result
+        spans the full 0–255 range regardless of ambient light level.
 
         Returns
         -------
         (r, g, b) tuple with values 0–255
         """
-        r, g, b, _ = self._apds.color_data
-        return (r >> 8, g >> 8, b >> 8)
+        r, g, b, c = self._apds.color_data
+        if c == 0:
+            return (0, 0, 0)
+        return (
+            min(255, r * 255 // c),
+            min(255, g * 255 // c),
+            min(255, b * 255 // c),
+        )
 
     def color_as_hex(self) -> int:
         """Convert the 16-bit RGBC reading to a single 24-bit hex colour integer.
