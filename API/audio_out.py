@@ -13,7 +13,7 @@ Hardware
 --------
   board.DAC  — dedicated audio DAC output pin (connect to audio amplifier or
                speaker with coupling capacitor)
-  board.D3   — onboard user button (used as trigger in the original test)
+  board.D3   — onboard user button 
 
 Requires
 --------
