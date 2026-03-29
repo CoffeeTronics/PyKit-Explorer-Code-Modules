@@ -87,11 +87,11 @@ class LCDDisplay:
 
     def backlight_on(self):
         """Turn the LCD backlight on."""
-        self._backlight.value = True
+        self._backlight.value = False
 
     def backlight_off(self):
         """Turn the LCD backlight off."""
-        self._backlight.value = False
+        self._backlight.value = True
 
     @property
     def display(self):
