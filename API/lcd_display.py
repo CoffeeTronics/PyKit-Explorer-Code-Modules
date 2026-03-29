@@ -32,8 +32,10 @@ Use this module for:
 import board
 import displayio
 import digitalio
+import terminalio
 import adafruit_imageload
 import time
+from adafruit_display_text import label as _label
 
 try:
     from fourwire import FourWire
@@ -97,6 +99,76 @@ class LCDDisplay:
     def display(self):
         """The raw ST7789 display object — use for direct displayio access."""
         return self._display
+
+    # -- Single-group display setup ------------------------------------------
+
+    def make_group(self, bg_color: int = 0x000000):
+        """Create a full-screen displayio Group with a solid background.
+
+        Sets it as the display root_group immediately.  Returns a tuple of
+        (group, palette) so the caller can swap the background colour later
+        by writing palette[0] = new_color.
+
+        Parameters
+        ----------
+        bg_color : 24-bit RGB colour for the background, e.g. 0x000080
+
+        Returns
+        -------
+        (displayio.Group, displayio.Palette)
+
+        Example
+        -------
+        >>> group, palette = lcd.make_group(0x000000)
+        >>> palette[0] = 0x000080   # swap to dark blue later
+        """
+        bitmap  = displayio.Bitmap(WIDTH, HEIGHT, 1)
+        palette = displayio.Palette(1)
+        palette[0] = bg_color
+        group = displayio.Group()
+        group.append(displayio.TileGrid(bitmap, pixel_shader=palette))
+        self._display.root_group = group
+        return group, palette
+
+    def add_label(self, group: displayio.Group, text: str,
+                  x: int, y: int,
+                  color: int = 0xFFFFFF,
+                  scale: int = 2) -> "_label.Label":
+        """Create a horizontally-centred label and append it to *group*.
+
+        Uses terminalio.FONT with anchor_point=(0.5, 0.0) so x=120 centres
+        text on the 240 px display.  Returns the Label so the caller can
+        update .text or .hidden later.
+
+        Parameters
+        ----------
+        group : displayio.Group to append to
+        text  : initial string
+        x, y  : pixel position (x=120 centres on a 240 px display)
+        color : 24-bit RGB text colour
+        scale : integer font scale (1 = 6×8 px per char)
+
+        Returns
+        -------
+        adafruit_display_text.label.Label
+
+        Example
+        -------
+        >>> group, palette = lcd.make_group()
+        >>> temp_lbl = lcd.add_label(group, "--.- C", 120, 42,
+        ...                          color=0x00FF00, scale=3)
+        >>> temp_lbl.text = "37.2 C"   # update in main loop
+        """
+        lbl = _label.Label(
+            terminalio.FONT,
+            text=text,
+            color=color,
+            scale=scale,
+            anchor_point=(0.5, 0.0),
+            anchored_position=(x, y),
+        )
+        group.append(lbl)
+        return lbl
 
     # -- Background ----------------------------------------------------------
 
