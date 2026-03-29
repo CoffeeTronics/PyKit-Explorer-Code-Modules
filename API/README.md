@@ -69,7 +69,7 @@ CIRCUITPY/
 | Module | Class(es) | What it does |
 |--------|-----------|-------------|
 | `neopixels` | `NeoPixels` | Drive 5 RGB LEDs; solid colours; chase, rainbow, pulse animations; bar-graph value mapping |
-| `lcd_display` | `LCDDisplay` | Init 240×135 ST7789 LCD; backlight control; fill screen; load & position BMP sprites; bounce and IMU-driven movement |
+| `lcd_display` | `LCDDisplay` | Init 240×135 ST7789 LCD; backlight control; `make_group()` creates a persistent display group with swappable background colour; `add_label()` adds a centred text label to a group; load & position BMP sprites; bounce and IMU-driven movement |
 | `imu_sensor` | `IMUSensor` | Read acceleration, gyro, magnetometer; tilt angles; tilt direction; sprite delta for IMU controls |
 | `audio_out` | `AudioOutput` | Sine tone generation at any frequency; WAV file playback; play scales |
 | `sd_card` | `SDCard` | Mount SD card; read/write/append text files; CSV data logging; filesystem utilities |
@@ -297,48 +297,17 @@ while True:
 Place your `.bmp` image files in the `/Images` folder on the CIRCUITPY drive.
 
 ```python
-import board
-import displayio
-import digitalio
-import adafruit_imageload
-from fourwire import FourWire
-from adafruit_st7789 import ST7789
+import sys
+sys.path.append("/API")
 
-# LCD backlight (active LOW)
-backlight = digitalio.DigitalInOut(board.LCD_BL)
-backlight.direction = digitalio.Direction.OUTPUT
-backlight.value = False
+from lcd_display import LCDDisplay
 
-# Release any existing displays
-displayio.release_displays()
+lcd = LCDDisplay()
+lcd.backlight_on()
 
-# Display setup
-DISPLAY_WIDTH = 240
-DISPLAY_HEIGHT = 135
-
-spi = board.LCD_SPI()
-display_bus = FourWire(spi, command=board.D4, chip_select=board.LCD_CS)
-display = ST7789(display_bus, rotation=90,
-                 width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT,
-                 rowstart=40, colstart=53)
-
-# Load and display image
-sprite_sheet, palette = adafruit_imageload.load("/Images/Bluey_Family.BMP",
-                                                bitmap=displayio.Bitmap,
-                                                palette=displayio.Palette)
-
-sprite = displayio.TileGrid(sprite_sheet, pixel_shader=palette,
-                            width=1, height=1,
-                            tile_width=DISPLAY_WIDTH,
-                            tile_height=DISPLAY_HEIGHT)
-
-group = displayio.Group()
-group.append(sprite)
-display.root_group = group
-
-# Centre the sprite
-group.x = (DISPLAY_WIDTH - DISPLAY_WIDTH) // 2
-group.y = (DISPLAY_HEIGHT - DISPLAY_HEIGHT) // 2
+# load_sprite() loads the BMP and returns a positioned displayio.Group
+group = lcd.load_sprite("/Images/Bluey_Family.BMP", 240, 135, x=0, y=0)
+lcd.display.root_group = group
 
 while True:
     pass
@@ -355,30 +324,13 @@ CircuitPython automatically redirects `print()` output to an attached display.
 This example initialises the LCD and then uses `print()` as a simple terminal.
 
 ```python
-import time
-import board
-import displayio
-import digitalio
-from fourwire import FourWire
-from adafruit_st7789 import ST7789
+import sys, time
+sys.path.append("/API")
 
-# LCD backlight (active LOW)
-backlight = digitalio.DigitalInOut(board.LCD_BL)
-backlight.direction = digitalio.Direction.OUTPUT
-backlight.value = False
+from lcd_display import LCDDisplay
 
-# Release any existing displays
-displayio.release_displays()
-
-# Display setup
-DISPLAY_WIDTH = 240
-DISPLAY_HEIGHT = 135
-
-spi = board.LCD_SPI()
-display_bus = FourWire(spi, command=board.D4, chip_select=board.LCD_CS)
-display = ST7789(display_bus, rotation=90,
-                 width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT,
-                 rowstart=40, colstart=53)
+lcd = LCDDisplay()
+lcd.backlight_on()
 
 x = 0
 
@@ -401,32 +353,17 @@ Text strings rotate down through the four lines every second while
 the line colours stay fixed.
 
 ```python
-import time
-import board
+import sys, time
+sys.path.append("/API")
+
 import displayio
-import digitalio
 from adafruit_bitmap_font import bitmap_font
 from adafruit_display_text import label
-from adafruit_st7789 import ST7789
-from fourwire import FourWire
 
-# LCD backlight (active LOW)
-backlight = digitalio.DigitalInOut(board.LCD_BL)
-backlight.direction = digitalio.Direction.OUTPUT
-backlight.value = False
+from lcd_display import LCDDisplay
 
-# Release any existing displays
-displayio.release_displays()
-
-# Display setup
-DISPLAY_WIDTH = 240
-DISPLAY_HEIGHT = 135
-
-spi = board.LCD_SPI()
-display_bus = FourWire(spi, command=board.D4, chip_select=board.LCD_CS)
-display = ST7789(display_bus, rotation=90,
-                 width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT,
-                 rowstart=40, colstart=53)
+lcd = LCDDisplay()
+lcd.backlight_on()
 
 # Load font
 font = bitmap_font.load_font("/Fonts/Helvetica-Bold-16.bdf")
@@ -455,7 +392,7 @@ texts = [
 group = displayio.Group()
 for lbl in labels:
     group.append(lbl)
-display.root_group = group
+lcd.display.root_group = group
 
 # Assign initial text
 for i in range(4):
@@ -514,65 +451,79 @@ runner.run()
 
 Combines `cpu_temp`, `lcd_display`, and `ble_uart` to read the CPU temperature
 and display it on the LCD with colour-coded thresholds, print to the serial
-console, and send over BLE. Requires `adafruit_bitmap_font` and
-`adafruit_display_text` in `/lib`.
+console, and send over BLE. Strings sent from the connected BLE device are
+displayed on the LCD for 5 seconds before reverting to the temperature readout.
+
+`make_group()` creates the single persistent display group (set as `root_group`
+once at startup). `add_label()` appends centred text labels to that group —
+no raw `displayio` imports needed in `code.py`.
 
 ```python
 import sys, time
 sys.path.append("/API")
 
-import displayio
-from adafruit_bitmap_font import bitmap_font
-from adafruit_display_text import label
-from cpu_temp import CPUTemperature
+from cpu_temp    import CPUTemperature
 from lcd_display import LCDDisplay
-from ble_uart import BLEUart
+from ble_uart    import BLEUart
 
-# Colour thresholds
-GREEN  = 0x00FF00  # < 30 C
-ORANGE = 0xFF8000  # 30–35 C
-RED    = 0xFF0000  # > 35 C
+# Colour thresholds (°C)
+THRESH_WARN = 30.0   # below → green, above → orange, 35+ → red
+THRESH_HOT  = 35.0
 
 # Initialise hardware
 lcd  = LCDDisplay()
 temp = CPUTemperature()
 ble  = BLEUart()
+lcd.backlight_on()
 
-# Set up text label on LCD
-font = bitmap_font.load_font("/Fonts/Helvetica-Bold-16.bdf")
-text_area = label.Label(font, text="", color=GREEN)
-text_area.x = 10
-text_area.y = 67
+# Build a single persistent group — root_group is set once inside make_group()
+group, bg = lcd.make_group(0x000000)
 
-group = displayio.Group()
-group.append(text_area)
-lcd.display.root_group = group
+# Temperature label
+temp_lbl = lcd.add_label(group, "--.- C", 120, 55, color=0x00FF00, scale=3)
+
+# BLE received message label — hidden until a message arrives
+ble_lbl        = lcd.add_label(group, "", 120, 55, color=0xFFFF00, scale=2)
+ble_lbl.hidden = True
+
+MSG_DURATION = 5.0
+msg_until    = 0.0
 
 while True:
-    # Process incoming BLE data
+    now = time.monotonic()
+    c   = temp.celsius
+
+    # Incoming BLE string — show it for MSG_DURATION seconds
     incoming = ble.receive()
     if incoming:
-        print(f"BLE RX: {incoming}")
+        temp_lbl.hidden = True
+        ble_lbl.hidden  = False
+        ble_lbl.text    = incoming.strip()[:20]
+        bg[0]           = 0x000080   # dark blue background
+        msg_until       = now + MSG_DURATION
 
-    c = temp.celsius
+    # Revert to temperature display after timeout
+    if now >= msg_until:
+        temp_lbl.hidden = False
+        ble_lbl.hidden  = True
+        bg[0]           = 0x000000   # black background
 
-    # Set label colour based on temperature
-    if c < 30:
-        text_area.color = GREEN
-    elif c <= 35:
-        text_area.color = ORANGE
-    else:
-        text_area.color = RED
+        # Update colour by threshold
+        if c < THRESH_WARN:
+            temp_lbl.color = 0x00FF00   # green
+        elif c <= THRESH_HOT:
+            temp_lbl.color = 0xFF8000   # orange
+        else:
+            temp_lbl.color = 0xFF0000   # red
 
-    # Update LCD label
-    text_area.text = f"CPU Temp: {c:.1f} C"
+        temp_lbl.text = f"{c:.1f} C"
 
-    # Print to serial console
-    print(text_area.text)
+    # Serial console
+    print(f"CPU Temp: {c:.1f} C")
 
-    # Send over BLE if connected
+    # BLE broadcast
     if ble.connected:
-        ble.send(f"{text_area.text}\n")
+        ble.send(f"Temp: {c:.1f}C\n")
 
     time.sleep(1)
 ```
