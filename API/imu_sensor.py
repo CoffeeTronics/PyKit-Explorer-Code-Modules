@@ -92,9 +92,9 @@ class IMUSensor:
         if ax < -self.TILT_THRESHOLD:
             return "LEFT"
         if ay >  self.TILT_THRESHOLD:
-            return "UP"
-        if ay < -self.TILT_THRESHOLD:
             return "DOWN"
+        if ay < -self.TILT_THRESHOLD:
+            return "UP"
         return "FLAT"
 
     def is_shaking(self, threshold: float = 15.0) -> bool:

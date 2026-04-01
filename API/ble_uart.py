@@ -86,12 +86,18 @@ class BLEUart:
         """True if a BLE central device is currently connected."""
         return self._connected
 
+    # Known RNBD451 status message prefixes (inside %...% delimiters)
+    _STATUS_PREFIXES = ("CONNECT", "DISCONNECT", "STREAM_OPEN",
+                        "PHY_UPDATED", "REBOOT", "STATUS")
+
     def _parse_status(self, text: str) -> str:
         """Strip RNBD451 status messages from text and update connection state.
 
         The module sends %CONNECT,<params>% on connection and
-        %DISCONNECT% on disconnection.  Returns the text with
-        status messages removed so only user data remains.
+        %DISCONNECT% on disconnection.  Other status messages such as
+        %STREAM_OPEN% and %PHY_UPDATED,...% are also stripped.
+        Returns the text with status messages removed so only user data
+        remains.
         """
         self._rx_buf += text
         user_data = ""
@@ -99,14 +105,21 @@ class BLEUart:
             before, _, rest = self._rx_buf.partition("%")
             user_data += before
             if "%" not in rest:
-                # incomplete status message — keep in buffer for next read
-                self._rx_buf = "%" + rest
+                if len("%" + rest) > 64:
+                    # Buffer too large for a status message — flush as data
+                    user_data += "%" + rest
+                    self._rx_buf = ""
+                else:
+                    # incomplete status message — keep in buffer for next read
+                    self._rx_buf = "%" + rest
                 return user_data
             msg, _, rest = rest.partition("%")
             if msg.startswith("CONNECT"):
                 self._connected = True
             elif msg.startswith("DISCONNECT"):
                 self._connected = False
+            # All %...% messages are stripped (status only); nothing added
+            # to user_data for any of them.
             self._rx_buf = rest
         user_data += self._rx_buf
         self._rx_buf = ""
@@ -122,15 +135,22 @@ class BLEUart:
         """Send raw bytes over BLE."""
         self._uart.write(data)
 
-    def receive(self, num_bytes: int = 64) -> str:
+    def receive(self, num_bytes: int = 64, debug: bool = False) -> str:
         """Read incoming BLE data and return as a string.
 
         Returns an empty string if nothing is available.
         Status messages from the RNBD451 are parsed and stripped automatically.
+
+        Parameters
+        ----------
+        num_bytes : max bytes to read per call
+        debug     : if True, print raw UART data before parsing
         """
         data = self._uart.read(num_bytes)
         if data is None:
             return self._parse_status("")
+        if debug:
+            print(f"[BLE RAW] {data}")
         raw_text = "".join([chr(b) for b in data])
         return self._parse_status(raw_text)
 
