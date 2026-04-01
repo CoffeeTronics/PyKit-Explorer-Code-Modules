@@ -119,13 +119,10 @@ can_bus      ← CAN network
 ## Installation
 
 1. Copy the module files you need into the `/API` folder on your `CIRCUITPY` drive.
-2. At the top of `code.py`, add `/API` to the module search path, then import as normal:
+2. Copy `pykit_explorer.py` to the root of your `CIRCUITPY` drive. Then at the top of `code.py`, just import `pykit_explorer`:
 
 ```python
-import sys
-sys.path.append("/API")
-
-import board
+import pykit_explorer
 from digital_io import DigitalInput, EdgeDetector
 from neopixels  import NeoPixels, RED, GREEN
 from imu_sensor import IMUSensor
@@ -138,10 +135,7 @@ from imu_sensor import IMUSensor
 ## Minimal Example — Blink the onboard LED
 
 ```python
-import sys, time
-sys.path.append("/API")
-
-import board
+import pykit_explorer
 from digital_io import DigitalOutput
 
 led = DigitalOutput(board.LED)
@@ -155,13 +149,87 @@ while True:
 
 ---
 
+## Minimal Example — Read User Button
+
+```python
+import pykit_explorer
+from digital_io import DigitalInput
+
+btn = DigitalInput(board.D3)
+
+while True:
+    print(f'Value:      {btn.value}')
+    print(f'is pressed: {btn.is_pressed()}')
+    time.sleep(0.2)
+```
+
+---
+
+## Minimal Example — Toggle LED on button press
+
+```python
+import pykit_explorer
+from digital_io import DigitalOutput, EdgeDetector
+
+led = DigitalOutput(board.LED)
+btn = EdgeDetector(board.D3)
+
+while True:
+    btn.update()
+    if btn.fell:
+        led.toggle()
+    time.sleep(0.01)
+```
+
+---
+
+## Minimal Example — NeoPixels
+
+```python
+import pykit_explorer
+from neopixels import NeoPixels, RED, GREEN, BLUE, OFF
+
+px = NeoPixels()   # 5 LEDs, brightness 0.1
+
+px.fill(RED)              # All pixels red
+print("All Neopixels should be red")
+time.sleep(1)
+px.set(2, GREEN)          # Pixel 2 only
+print("Pixel 2 should be green")
+time.sleep(1)
+px.color_chase(BLUE)      # One by one
+print("Neopixels should chase blue")
+px.rainbow_cycle(cycles=2)
+print("Neopixels should cycle through rainbow colors")
+px.off()
+```
+
+---
+
+## Minimal Example — NeoPixel bar graph
+
+```python
+import pykit_explorer
+from neopixels import NeoPixels, RED, GREEN, BLUE, PURPLE, CYAN
+
+px = NeoPixels()
+
+# Sweep 0-100 as a green->red bar
+for v in range(0, 101, 10):
+    px.map_value(v, 0, 100)
+    print(f'Value: {v}')
+    time.sleep(0.4)
+
+# Set all 5 pixels individually
+px.set_all([RED, GREEN, BLUE, PURPLE, CYAN])
+```
+
+---
+
 ## Minimal Example — Tilt-controlled NeoPixel colours
 
 ```python
-import sys
-sys.path.append("/API")
-
-import board
+import pykit_explorer
 from imu_sensor import IMUSensor
 from neopixels  import NeoPixels, RED, GREEN, BLUE, YELLOW, OFF
 
@@ -184,13 +252,32 @@ while True:
 
 ---
 
+## Minimal Example — IMU shake detection
+
+```python
+import pykit_explorer
+from imu_sensor import IMUSensor
+from neopixels import NeoPixels, WHITE, OFF
+
+imu = IMUSensor()
+px  = NeoPixels()
+
+while True:
+    imu.print_all()        # Serial Monitor
+    if imu.is_shaking():
+        px.fill(WHITE)
+        time.sleep(0.2)
+    else:
+        px.off()
+    time.sleep(0.1)
+```
+
+---
+
 ## Minimal Example — BLE temperature logger
 
 ```python
-import sys, time
-sys.path.append("/API")
-
-import board
+import pykit_explorer
 from ble_uart import BLEUart
 from cpu_temp import CPUTemperature
 
@@ -204,33 +291,26 @@ while True:
     time.sleep(2)
 ```
 
-## Minimal Example — BME680 air quality display
+---
+
+## Minimal Example — Receiving BLE commands
 
 ```python
-import sys, time
-sys.path.append("/API")
+import pykit_explorer
+from ble_uart import BLEUart
+from neopixels import NeoPixels, RED, GREEN, OFF
 
-import board
-from i2c_bus import I2CBus
-from bme680 import BME680Sensor
-from neopixels import NeoPixels, GREEN, YELLOW, RED, BLUE
-
-my_i2c = I2CBus()
-sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
-px     = NeoPixels()
+ble = BLEUart()
+px  = NeoPixels()
 
 while True:
-    sensor.print_all()
-    level = sensor.temperature_level()
-    if level == "LOW":
-        px.fill(BLUE)
-    elif level == "MED":
-        px.fill(GREEN)
-    elif level == "HIGH":
-        px.fill(YELLOW)
-    else:
-        px.fill(RED)
-    time.sleep(1)
+    cmd = ble.receive().strip()
+    if cmd == 'RED':     px.fill(RED)
+    elif cmd == 'GREEN': px.fill(GREEN)
+    elif cmd == 'OFF':   px.off()
+    if cmd:
+        print(f'Got: {repr(cmd)}')
+    time.sleep(0.05)
 ```
 
 ---
@@ -238,10 +318,7 @@ while True:
 ## Minimal Example — APDS9960 gesture → WAV audio
 
 ```python
-import sys
-sys.path.append("/API")
-
-import board
+import pykit_explorer
 from i2c_bus import I2CBus
 from apds9960 import APDS9960Sensor, GESTURE_UP, GESTURE_DOWN, GESTURE_LEFT, GESTURE_RIGHT
 from audio_out import AudioOutput
@@ -266,13 +343,10 @@ while True:
 
 ---
 
-## Minimal Example — APDS9960 color → NeoPixels
+## Minimal Example — APDS9960 RGBC values to NeoPixels
 
 ```python
-import sys, time
-sys.path.append("/API")
-
-import board
+import pykit_explorer
 from i2c_bus import I2CBus
 from apds9960 import APDS9960Sensor
 from neopixels import NeoPixels
@@ -280,12 +354,41 @@ from neopixels import NeoPixels
 my_i2c = I2CBus()
 sensor = APDS9960Sensor(my_i2c.bus)
 px     = NeoPixels()
-
 sensor.enable_color()
 
 while True:
-    px.fill(sensor.color_as_neopixel())
-    time.sleep(0.1)
+    r,g,b,clear = sensor.color
+    print(f'R:{r} G:{g} B:{b} C:{clear}')
+    neo = sensor.color_as_neopixel()
+    px.fill(neo)
+    time.sleep(0.2)
+```
+
+
+## Minimal Example — BME680 air quality display
+
+```python
+import pykit_explorer
+from i2c_bus import I2CBus
+from bme680 import BME680Sensor
+from neopixels import NeoPixels, GREEN, YELLOW, RED, BLUE
+
+my_i2c = I2CBus()
+sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
+px     = NeoPixels()
+
+while True:
+    sensor.print_all()
+    level = sensor.temperature_level()
+    if level == "LOW":
+        px.fill(BLUE)
+    elif level == "MED":
+        px.fill(GREEN)
+    elif level == "HIGH":
+        px.fill(YELLOW)
+    else:
+        px.fill(RED)
+    time.sleep(1)
 ```
 
 ---
@@ -295,8 +398,7 @@ while True:
 Place your `.bmp` image files in the `/Images` folder on the CIRCUITPY drive.
 
 ```python
-import sys
-sys.path.append("/API")
+import pykit_explorer
 
 from lcd_display import LCDDisplay
 
@@ -322,8 +424,7 @@ CircuitPython automatically redirects `print()` output to an attached display.
 This example initialises the LCD and then uses `print()` as a simple terminal.
 
 ```python
-import sys, time
-sys.path.append("/API")
+import pykit_explorer
 
 from lcd_display import LCDDisplay
 
@@ -351,8 +452,7 @@ Text strings rotate down through the four lines every second while
 the line colours stay fixed.
 
 ```python
-import sys, time
-sys.path.append("/API")
+import pykit_explorer
 
 import displayio
 from adafruit_bitmap_font import bitmap_font
@@ -414,10 +514,7 @@ while True:
 Requires the `asyncio` library in `/lib`.
 
 ```python
-import sys
-sys.path.append("/API")
-
-import board
+import pykit_explorer
 import neopixel
 from async_tasks import AsyncRunner
 
@@ -457,8 +554,7 @@ once at startup). `add_label()` appends centred text labels to that group —
 no raw `displayio` imports needed in `code.py`.
 
 ```python
-import sys, time
-sys.path.append("/API")
+import pykit_explorer
 
 from cpu_temp    import CPUTemperature
 from lcd_display import LCDDisplay
