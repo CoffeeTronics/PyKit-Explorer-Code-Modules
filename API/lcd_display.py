@@ -48,6 +48,15 @@ from adafruit_st7789 import ST7789
 WIDTH  = 240
 HEIGHT = 135
 
+class Colors:
+    BLACK  = 0x000000
+    WHITE  = 0xFFFFFF
+    RED    = 0xFF0000
+    GREEN  = 0x00FF00
+    BLUE   = 0x0000FF
+    ORANGE = 0xFF8000
+    YELLOW = 0xFFFF00
+    GRAY   = 0x888888
 
 class LCDDisplay:
     """Drive the 240×135 ST7789 TFT LCD on the Ruler baseboard.
@@ -102,7 +111,7 @@ class LCDDisplay:
 
     # -- Single-group display setup ------------------------------------------
 
-    def make_group(self, bg_color: int = 0x000000):
+    def make_group(self, bg_color: int = Colors.BLACK):
         """Create a full-screen displayio Group with a solid background.
 
         Sets it as the display root_group immediately.  Returns a tuple of
@@ -169,6 +178,72 @@ class LCDDisplay:
         )
         group.append(lbl)
         return lbl
+
+    # -- Text scrolling ------------------------------------------------------
+
+    def scroll_label(self, label, text: str, y: int,
+                     scale: int = 2, step: int = 4, delay: float = 0.0,
+                     poll=None):
+        """Scroll text across the full display width, right to left.
+
+        Wraps the label in a temporary sub-group and moves group.x each frame,
+        which is cheaper than updating anchored_position and gives smoother
+        animation at small step sizes.
+
+        Parameters
+        ----------
+        label : a Label returned by add_label()
+        text  : the full string to scroll
+        y     : vertical pixel position (same y used when the label was created)
+        scale : font scale — must match the label's scale (default 2)
+        step  : pixels to advance per frame (smaller = smoother, default 2)
+        delay : seconds to sleep between frames (default 0.0)
+        poll  : optional callable invoked each frame (e.g. ble.receive) to
+                prevent UART buffer overflow during the blocking scroll
+        """
+        char_w = 6 * scale
+        text_w = len(text) * char_w
+
+        # Position label at x=0 within the sub-group; group.x does the scrolling
+        label.text              = text
+        label.anchor_point      = (0.0, 0.0)
+        label.anchored_position = (0, y)
+
+        # Remove label from its current parent (root group) before reparenting
+        root = self._display.root_group
+        label_index = None
+        for i in range(len(root)):
+            if root[i] is label:
+                label_index = i
+                break
+        if label_index is not None:
+            root.remove(label)
+
+        # Wrap in a sub-group so group.x does the scrolling (cheaper than anchored_position)
+        sub_group = displayio.Group(x=WIDTH, y=0)
+        sub_group.append(label)
+        root.append(sub_group)
+
+        self._display.auto_refresh = False
+        try:
+            x = WIDTH
+            while x > -text_w:
+                x -= step
+                sub_group.x = x
+                if poll is not None:
+                    poll()
+                self._display.refresh()
+                if delay:
+                    time.sleep(delay)
+        finally:
+            self._display.auto_refresh = True
+            # Restore label to root group
+            root.remove(sub_group)
+            sub_group.remove(label)
+            label.anchor_point      = (0.5, 0.0)
+            label.anchored_position = (WIDTH // 2, y)
+            label.text = ""
+            root.append(label)
 
     # -- Background ----------------------------------------------------------
 

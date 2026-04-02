@@ -364,7 +364,6 @@ while True:
     time.sleep(0.2)
 ```
 
-
 ## Minimal Example — BME680 air quality display
 
 ```python
@@ -542,7 +541,7 @@ runner.run()
 
 ---
 
-## Minimal Example — CPU temperature on LCD, serial, and BLE
+## Complex Example — CPU temperature on LCD, serial, NeoPixels, and BLE
 
 Combines `cpu_temp`, `lcd_display`, and `ble_uart` to read the CPU temperature
 and display it on the LCD with colour-coded thresholds, print to the serial
@@ -557,12 +556,8 @@ no raw `displayio` imports needed in `code.py`.
 import pykit_explorer
 
 from cpu_temp    import CPUTemperature
-from lcd_display import LCDDisplay
+from lcd_display import LCDDisplay, Colors
 from ble_uart    import BLEUart
-
-# Colour thresholds (°C)
-THRESH_WARN = 30.0   # below → green, above → orange, 35+ → red
-THRESH_HOT  = 35.0
 
 # Initialise hardware
 lcd  = LCDDisplay()
@@ -570,19 +565,21 @@ temp = CPUTemperature()
 ble  = BLEUart()
 lcd.backlight_on()
 
-# Build a single persistent group — root_group is set once inside make_group()
-group, bg = lcd.make_group(0x000000)
+# Build display group
+group, bg = lcd.make_group(Colors.BLACK)
 
-# Temperature screen labels
-title_lbl   = lcd.add_label(group, "CPU Temperature", 120,  4, color=0xFFFFFF, scale=2)
-celsius_lbl = lcd.add_label(group, "--.- C",          120, 42, color=0x00FF00, scale=3)
-fahr_lbl    = lcd.add_label(group, "--.- F",          120, 95, color=0x00CCFF, scale=2)
+# Temperature screen
+title_lbl   = lcd.add_label(group, "CPU Temperature", 120,  4, color=Colors.WHITE, scale=2)
+celsius_lbl = lcd.add_label(group, "--.- C",          120, 55, color=Colors.GREEN, scale=3)
 
-# BLE received message labels — hidden until a message arrives
-ble_hdr_lbl  = lcd.add_label(group, "BLE Message:", 120,  4, color=0xFFFFFF, scale=2)
-ble_body_lbl = lcd.add_label(group, "",             120, 55, color=0xFFFF00, scale=2)
-ble_hdr_lbl.hidden  = True
-ble_body_lbl.hidden = True
+# BLE status line -- always visible at the bottom
+ble_status_lbl = lcd.add_label(group, "BLE: Waiting...", 120, 115, color=Colors.GRAY, scale=1)
+
+# BLE message screen -- hidden until a message arrives
+msg_hdr_lbl  = lcd.add_label(group, "Message:",  120,  4, color=Colors.WHITE, scale=2)
+msg_body_lbl = lcd.add_label(group, "",          120, 55, color=Colors.YELLOW, scale=2)
+msg_hdr_lbl.hidden  = True
+msg_body_lbl.hidden = True
 
 MSG_DURATION = 5.0
 msg_until    = 0.0
@@ -590,48 +587,53 @@ msg_until    = 0.0
 while True:
     now = time.monotonic()
     c   = temp.celsius
-    f   = temp.fahrenheit
+    msg = ble.poll()
 
-    # Incoming BLE string — show it for MSG_DURATION seconds
-    incoming = ble.receive()
-    if incoming:
-        title_lbl.hidden   = True
-        celsius_lbl.hidden = True
-        fahr_lbl.hidden    = True
-        ble_hdr_lbl.hidden  = False
-        ble_body_lbl.hidden = False
-        ble_body_lbl.text   = incoming.strip()[:20]
-        bg[0]               = 0x000080   # dark blue background
-        msg_until           = now + MSG_DURATION
+    # Incoming BLE message -- show it for MSG_DURATION seconds
+    if msg:
+        title_lbl.hidden    = True
+        celsius_lbl.hidden  = True
+        msg_hdr_lbl.hidden  = False
+        msg_body_lbl.hidden = False
+        # If longer than 20 characters, scroll with a sliding window
+        if len(msg) > 20:
+            msg_body_lbl.text = msg[:20]
+            time.sleep(1.0)
+            for i in range(1, len(msg) - 19):
+                msg_body_lbl.text = msg[i:i + 20]
+                time.sleep(0.25)
+            time.sleep(0.5)
+            msg_until = now
+        else:
+            msg_body_lbl.text = msg
+            msg_until         = now + MSG_DURATION
 
     # Revert to temperature display after timeout
     if now >= msg_until:
         title_lbl.hidden    = False
         celsius_lbl.hidden  = False
-        fahr_lbl.hidden     = False
-        ble_hdr_lbl.hidden  = True
-        ble_body_lbl.hidden = True
-        bg[0]               = 0x000000   # black background
-
-        # Update celsius colour by threshold
-        if c < THRESH_WARN:
-            celsius_lbl.color = 0x00FF00   # green
-        elif c <= THRESH_HOT:
-            celsius_lbl.color = 0xFF8000   # orange
+        msg_hdr_lbl.hidden  = True
+        msg_body_lbl.hidden = True
+        celsius_lbl.text  = f"{c:.1f} C"
+        if c < 35.0:
+            celsius_lbl.color = Colors.GREEN
+        elif c <= 40.0:
+            celsius_lbl.color = Colors.ORANGE
         else:
-            celsius_lbl.color = 0xFF0000   # red
+            celsius_lbl.color = Colors.RED
 
-        celsius_lbl.text = f"{c:.1f} C"
-        fahr_lbl.text    = f"{f:.1f} F"
-
-    # Serial console
-    print(f"CPU Temp: {c:.1f} C / {f:.1f} F")
-
-    # BLE broadcast
+    # BLE status and temperature broadcast
     if ble.connected:
-        ble.send(f"Temp: {c:.1f}C / {f:.1f}F")
+        ble_status_lbl.color = Colors.GREEN
+        ble_status_lbl.text  = "BLE: Connected"
+        if not ble.just_connected:
+            ble.send("Temp: " + str(round(c, 1)) + "C" + chr(10))
+    else:
+        ble_status_lbl.text  = "BLE: Waiting..."
+        ble_status_lbl.color = Colors.GRAY
 
     time.sleep(1)
+
 ```
 
 ---
