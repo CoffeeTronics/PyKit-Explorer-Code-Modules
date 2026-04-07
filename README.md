@@ -119,10 +119,12 @@ can_bus      ← CAN network
 ## Installation
 
 1. Copy the module files you need into the `/API` folder on your `CIRCUITPY` drive.
-2. Copy `pykit_explorer.py` to the root of your `CIRCUITPY` drive. Then at the top of `code.py`, just import `pykit_explorer`:
+2. At the top of `code.py`, add `/API` to the module search path, then import as normal:
 
 ```python
 import pykit_explorer
+
+import board
 from digital_io import DigitalInput, EdgeDetector
 from neopixels  import NeoPixels, RED, GREEN
 from imu_sensor import IMUSensor
@@ -136,6 +138,9 @@ from imu_sensor import IMUSensor
 
 ```python
 import pykit_explorer
+import time
+
+import board
 from digital_io import DigitalOutput
 
 led = DigitalOutput(board.LED)
@@ -149,87 +154,11 @@ while True:
 
 ---
 
-## Minimal Example — Read User Button
-
-```python
-import pykit_explorer
-from digital_io import DigitalInput
-
-btn = DigitalInput(board.D3)
-
-while True:
-    print(f'Value:      {btn.value}')
-    print(f'is pressed: {btn.is_pressed()}')
-    time.sleep(0.2)
-```
-
----
-
-## Minimal Example — Toggle LED on button press
-
-```python
-import pykit_explorer
-from digital_io import DigitalOutput, EdgeDetector
-
-led = DigitalOutput(board.LED)
-btn = EdgeDetector(board.D3)
-
-while True:
-    btn.update()
-    if btn.fell:
-        led.toggle()
-    time.sleep(0.01)
-```
-
----
-
-## Minimal Example — NeoPixels
-
-```python
-import pykit_explorer
-from neopixels import NeoPixels, RED, GREEN, BLUE, OFF
-
-px = NeoPixels()   # 5 LEDs, brightness 0.1
-
-px.fill(RED)              # All pixels red
-print("All Neopixels should be red")
-time.sleep(1)
-px.set(2, GREEN)          # Pixel 2 only
-print("Pixel 2 should be green")
-time.sleep(1)
-px.color_chase(BLUE)      # One by one
-print("Neopixels should chase blue")
-px.rainbow_cycle(cycles=2)
-print("Neopixels should cycle through rainbow colors")
-px.off()
-```
-
----
-
-## Minimal Example — NeoPixel bar graph
-
-```python
-import pykit_explorer
-from neopixels import NeoPixels, RED, GREEN, BLUE, PURPLE, CYAN
-
-px = NeoPixels()
-
-# Sweep 0-100 as a green->red bar
-for v in range(0, 101, 10):
-    px.map_value(v, 0, 100)
-    print(f'Value: {v}')
-    time.sleep(0.4)
-
-# Set all 5 pixels individually
-px.set_all([RED, GREEN, BLUE, PURPLE, CYAN])
-```
-
----
-
 ## Minimal Example — Tilt-controlled NeoPixel colours
 
 ```python
 import pykit_explorer
+import board
 from imu_sensor import IMUSensor
 from neopixels  import NeoPixels, RED, GREEN, BLUE, YELLOW, OFF
 
@@ -252,28 +181,6 @@ while True:
 
 ---
 
-## Minimal Example — IMU shake detection
-
-```python
-import pykit_explorer
-from imu_sensor import IMUSensor
-from neopixels import NeoPixels, WHITE, OFF
-
-imu = IMUSensor()
-px  = NeoPixels()
-
-while True:
-    imu.print_all()        # Serial Monitor
-    if imu.is_shaking():
-        px.fill(WHITE)
-        time.sleep(0.2)
-    else:
-        px.off()
-    time.sleep(0.1)
-```
-
----
-
 ## Minimal Example — BLE temperature logger
 
 ```python
@@ -291,26 +198,33 @@ while True:
     time.sleep(2)
 ```
 
----
-
-## Minimal Example — Receiving BLE commands
+## Minimal Example — BME680 air quality display
 
 ```python
 import pykit_explorer
-from ble_uart import BLEUart
-from neopixels import NeoPixels, RED, GREEN, OFF
+import time
 
-ble = BLEUart()
-px  = NeoPixels()
+import board
+from i2c_bus import I2CBus
+from bme680 import BME680Sensor
+from neopixels import NeoPixels, GREEN, YELLOW, RED, BLUE
+
+my_i2c = I2CBus()
+sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
+px     = NeoPixels()
 
 while True:
-    cmd = ble.receive().strip()
-    if cmd == 'RED':     px.fill(RED)
-    elif cmd == 'GREEN': px.fill(GREEN)
-    elif cmd == 'OFF':   px.off()
-    if cmd:
-        print(f'Got: {repr(cmd)}')
-    time.sleep(0.05)
+    sensor.print_all()
+    level = sensor.temperature_level()
+    if level == "LOW":
+        px.fill(BLUE)
+    elif level == "MED":
+        px.fill(GREEN)
+    elif level == "HIGH":
+        px.fill(YELLOW)
+    else:
+        px.fill(RED)
+    time.sleep(1)
 ```
 
 ---
@@ -319,6 +233,8 @@ while True:
 
 ```python
 import pykit_explorer
+
+import board
 from i2c_bus import I2CBus
 from apds9960 import APDS9960Sensor, GESTURE_UP, GESTURE_DOWN, GESTURE_LEFT, GESTURE_RIGHT
 from audio_out import AudioOutput
@@ -343,10 +259,13 @@ while True:
 
 ---
 
-## Minimal Example — APDS9960 RGBC values to NeoPixels
+## Minimal Example — APDS9960 color → NeoPixels
 
 ```python
 import pykit_explorer
+import time
+
+import board
 from i2c_bus import I2CBus
 from apds9960 import APDS9960Sensor
 from neopixels import NeoPixels
@@ -354,40 +273,12 @@ from neopixels import NeoPixels
 my_i2c = I2CBus()
 sensor = APDS9960Sensor(my_i2c.bus)
 px     = NeoPixels()
+
 sensor.enable_color()
 
 while True:
-    r,g,b,clear = sensor.color
-    print(f'R:{r} G:{g} B:{b} C:{clear}')
-    neo = sensor.color_as_neopixel()
-    px.fill(neo)
-    time.sleep(0.2)
-```
-
-## Minimal Example — BME680 air quality display
-
-```python
-import pykit_explorer
-from i2c_bus import I2CBus
-from bme680 import BME680Sensor
-from neopixels import NeoPixels, GREEN, YELLOW, RED, BLUE
-
-my_i2c = I2CBus()
-sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
-px     = NeoPixels()
-
-while True:
-    sensor.print_all()
-    level = sensor.temperature_level()
-    if level == "LOW":
-        px.fill(BLUE)
-    elif level == "MED":
-        px.fill(GREEN)
-    elif level == "HIGH":
-        px.fill(YELLOW)
-    else:
-        px.fill(RED)
-    time.sleep(1)
+    px.fill(sensor.color_as_neopixel())
+    time.sleep(0.1)
 ```
 
 ---
@@ -424,6 +315,7 @@ This example initialises the LCD and then uses `print()` as a simple terminal.
 
 ```python
 import pykit_explorer
+import time
 
 from lcd_display import LCDDisplay
 
@@ -452,6 +344,7 @@ the line colours stay fixed.
 
 ```python
 import pykit_explorer
+import time
 
 import displayio
 from adafruit_bitmap_font import bitmap_font
@@ -514,6 +407,8 @@ Requires the `asyncio` library in `/lib`.
 
 ```python
 import pykit_explorer
+
+import board
 import neopixel
 from async_tasks import AsyncRunner
 
@@ -541,23 +436,32 @@ runner.run()
 
 ---
 
-## Complex Example — CPU temperature on LCD, serial, NeoPixels, and BLE
+## Minimal Example — CPU temperature on LCD, serial, and BLE
 
 Combines `cpu_temp`, `lcd_display`, and `ble_uart` to read the CPU temperature
 and display it on the LCD with colour-coded thresholds, print to the serial
-console, and send over BLE. Strings sent from the connected BLE device are
-displayed on the LCD for 5 seconds before reverting to the temperature readout.
+console, and send over BLE. Messages received from the connected device are
+displayed on the LCD and scrolled automatically if longer than 20 characters,
+with the duration calculated so the full message always completes one pass.
+Connection and disconnection events show a status banner. The display reverts
+to the temperature readout when the message expires.
 
-`make_group()` creates the single persistent display group (set as `root_group`
-once at startup). `add_label()` appends centred text labels to that group —
-no raw `displayio` imports needed in `code.py`.
+`make_group()` creates the single persistent display group. `add_label()`
+creates the temperature label. `make_scroll_label()` creates the BLE message
+label — it owns all scroll state internally so the main loop stays simple.
 
 ```python
 import pykit_explorer
+import time
 
 from cpu_temp    import CPUTemperature
 from lcd_display import LCDDisplay, Colors
 from ble_uart    import BLEUart
+
+# Colour thresholds (°C)
+THRESH_WARN   = 30.0
+THRESH_HOT    = 35.0
+TEMP_INTERVAL = 1.0
 
 # Initialise hardware
 lcd  = LCDDisplay()
@@ -565,76 +469,205 @@ temp = CPUTemperature()
 ble  = BLEUart()
 lcd.backlight_on()
 
-# Build display group
 group, bg = lcd.make_group(Colors.BLACK)
 
-# Temperature screen
-title_lbl   = lcd.add_label(group, "CPU Temperature", 120,  4, color=Colors.WHITE, scale=2)
-celsius_lbl = lcd.add_label(group, "--.- C",          120, 55, color=Colors.GREEN, scale=3)
+temp_lbl = lcd.add_label(group, "--.- C", 120, 55, color=Colors.GREEN, scale=3)
+ble_lbl  = lcd.make_scroll_label(group, 120, 55)
 
-# BLE status line -- always visible at the bottom
-ble_status_lbl = lcd.add_label(group, "BLE: Waiting...", 120, 115, color=Colors.GRAY, scale=1)
-
-# BLE message screen -- hidden until a message arrives
-msg_hdr_lbl  = lcd.add_label(group, "Message:",  120,  4, color=Colors.WHITE, scale=2)
-msg_body_lbl = lcd.add_label(group, "",          120, 55, color=Colors.YELLOW, scale=2)
-msg_hdr_lbl.hidden  = True
-msg_body_lbl.hidden = True
-
-MSG_DURATION = 5.0
-msg_until    = 0.0
+temp_next = 0.0
 
 while True:
-    now = time.monotonic()
-    c   = temp.celsius
-    msg = ble.poll()
+    now      = time.monotonic()
+    incoming = ble.poll()
 
-    # Incoming BLE message -- show it for MSG_DURATION seconds
-    if msg:
-        title_lbl.hidden    = True
-        celsius_lbl.hidden  = True
-        msg_hdr_lbl.hidden  = False
-        msg_body_lbl.hidden = False
-        # If longer than 20 characters, scroll with a sliding window
-        if len(msg) > 20:
-            msg_body_lbl.text = msg[:20]
-            time.sleep(1.0)
-            for i in range(1, len(msg) - 19):
-                msg_body_lbl.text = msg[i:i + 20]
-                time.sleep(0.25)
-            time.sleep(0.5)
-            msg_until = now
-        else:
-            msg_body_lbl.text = msg
-            msg_until         = now + MSG_DURATION
+    if ble.just_connected:
+        bg[0] = Colors.BLACK
+        ble_lbl.set("Connected")
 
-    # Revert to temperature display after timeout
-    if now >= msg_until:
-        title_lbl.hidden    = False
-        celsius_lbl.hidden  = False
-        msg_hdr_lbl.hidden  = True
-        msg_body_lbl.hidden = True
-        celsius_lbl.text  = f"{c:.1f} C"
-        if c < 35.0:
-            celsius_lbl.color = Colors.GREEN
-        elif c <= 40.0:
-            celsius_lbl.color = Colors.ORANGE
-        else:
-            celsius_lbl.color = Colors.RED
+    if ble.just_disconnected:
+        bg[0] = Colors.BLACK
+        ble_lbl.set("Disconnected")
 
-    # BLE status and temperature broadcast
-    if ble.connected:
-        ble_status_lbl.color = Colors.GREEN
-        ble_status_lbl.text  = "BLE: Connected"
-        if not ble.just_connected:
-            ble.send("Temp: " + str(round(c, 1)) + "C" + chr(10))
+    if incoming:
+        bg[0] = Colors.DARK_BLUE
+        ble_lbl.set(incoming.strip())
+
+    if ble_lbl.update(now):
+        temp_lbl.hidden = True
     else:
-        ble_status_lbl.text  = "BLE: Waiting..."
-        ble_status_lbl.color = Colors.GRAY
+        temp_lbl.hidden = False
+        bg[0]           = Colors.BLACK
 
-    time.sleep(1)
+        if now >= temp_next:
+            c         = temp.celsius
+            temp_next = now + TEMP_INTERVAL
 
+            if c < THRESH_WARN:
+                temp_lbl.color = Colors.GREEN
+            elif c <= THRESH_HOT:
+                temp_lbl.color = Colors.ORANGE
+            else:
+                temp_lbl.color = Colors.RED
+            temp_lbl.text = f"{c:.1f} C"
+
+    if now >= temp_next:
+        c         = temp.celsius
+        temp_next = now + TEMP_INTERVAL
+        print(f"CPU Temp: {c:.1f} C")
+        if ble.connected:
+            ble.send(f"Temp: {c:.1f}C\n")
 ```
+
+---
+
+## Tools
+
+Standalone diagnostic scripts that help you explore and verify hardware
+capabilities on the PyKit Explorer. Copy the script into `code.py` and run it
+to inspect your board — no extra libraries needed beyond the `/API` modules.
+
+---
+
+### PWM Pin Identifier
+
+Scans every pin on the PyKit Explorer and reports which pins are available for
+PWM output, which are PWM-capable but blocked by a board-level peripheral,
+and which have no PWM support at all.
+Results are printed in a consistent order: working PWM pins first, then
+prevented pins with the reason, then non-PWM pins. Useful before writing any
+PWM-based driver to confirm which pins are actually free to use.
+
+```python
+import pykit_explorer
+
+from pwm_pins import PWMPinScanner
+
+scanner = PWMPinScanner()
+scanner.scan()
+scanner.report()
+```
+
+### I2C Bus Scanner
+
+Scans the I2C bus and reports every device address found, a candidate device
+name based on a built-in address lookup table, and a confirmed device name read
+directly from the hardware via the WHO_AM_I or chip ID register.
+
+Covers all on-board devices (ICM-20948 IMU, BME680, APDS9960) as well as a
+wide range of common QWIIC breakout modules.
+
+```python
+import pykit_explorer
+from i2c_scan import I2CScanner
+
+scanner = I2CScanner()
+scanner.scan()
+scanner.report()
+scanner.deinit()
+```
+
+**Reading the output:**
+
+Each found device prints as two lines:
+
+```text
+  0x69  ICM-20948 (IMU)
+        WHO_AM_I @ 0x00: 0xEA → ICM-20948
+```
+
+- The first line shows the hex address and the candidate name from the address
+  lookup table. Where multiple devices share an address, all possibilities are
+  listed separated by `/`.
+- The second line shows the WHO_AM_I register address, the raw value read back,
+  and the confirmed device name. If the value does not match any known ID,
+  `unrecognised` is shown — this may indicate a device variant not yet in the
+  lookup table. If no WHO_AM_I register is defined for that address, the second
+  line is omitted.
+
+Results are also available programmatically via `scanner.results`, a list of
+dicts with keys `address`, `candidate`, `who_am_i`, and `confirmed`.
+
+### Register-Level Peek / Poke
+
+A REPL-friendly utility for reading and writing individual hardware registers
+on any I2C or SPI device by address. Think of it as a lightweight version of
+what you would do with Microchip's MPLAB Data Visualizer, but running entirely
+in Python on the board itself. Useful for exploring a device's register map,
+verifying that a configuration write took effect, or reading raw sensor output
+without a full driver.
+
+Both `I2CDevice` and `SPIDevice` expose the same interface:
+
+| Method                     | Description                                            |
+| -------------------------- | ------------------------------------------------------ |
+| `peek(register)`         | Read one register and print its value                  |
+| `peek(register, length)` | Burst-read and print*length* consecutive registers   |
+| `poke(register, value)`  | Write one byte and confirm with an automatic readback  |
+| `dump(start, end)`       | Read and print every register from*start* to *end* |
+
+Values are always shown as hex, decimal, and binary so they can be read
+directly against a datasheet register map.
+
+**I2C example — ICM-20948 IMU at address 0x69:**
+
+```python
+import pykit_explorer
+
+from reg_peek_poke import I2CDevice
+
+imu = I2CDevice(0x69)
+
+imu.peek(0x00)           # Read WHO_AM_I — should return 0xEA
+imu.dump(0x00, 0x06)     # Dump the first 7 registers
+imu.poke(0x06, 0x01)     # Write PWR_MGMT_1 to wake the IMU from sleep
+
+imu.deinit()
+```
+
+**SPI example — generic sensor on board.CS:**
+
+```python
+import pykit_explorer
+import board
+
+from reg_peek_poke import SPIDevice
+
+# Default convention: bit 7 = 1 for read, bit 7 = 0 for write.
+# Works with ICM-20948, LSM6DS, BMI160, and most MEMS sensors.
+# Override read_bit / write_mask for devices with a different protocol.
+dev = SPIDevice(board.CS)
+
+dev.peek(0x0F)            # Read the WHO_AM_I / device ID register
+dev.dump(0x00, 0x1F)      # Dump the first 32 registers
+dev.poke(0x10, 0x00)      # Write 0x00 to register 0x10
+
+dev.deinit()
+```
+
+**Reading the output:**
+
+`peek` and `dump` print one line per register in a fixed-column table:
+
+```text
+  Addr   Hex    Dec  Bin
+  ---------------------------------
+  0x00   0xEA  234  1110 1010
+  0x01   0x00    0  0000 0000
+```
+
+`poke` prints the written value followed by an immediate readback. If the
+readback does not match what was written, a warning is shown — this is normal
+for read-only bits, reserved fields, or registers where the hardware masks
+certain bits:
+
+```text
+  Wrote 0x01 → register 0x06
+  Readback:  0x01    1  0000 0001
+```
+
+All methods also return their results for programmatic use: `peek` returns an
+int (or bytearray when *length* > 1), and `dump` returns a dict mapping each
+register address to its value.
 
 ---
 

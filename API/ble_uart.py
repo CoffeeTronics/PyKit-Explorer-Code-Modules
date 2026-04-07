@@ -74,7 +74,7 @@ class BLEUart:
                 pass
 
         self._uart = busio.UART(board.BLE_TX, board.BLE_RX,
-                                baudrate=baudrate, timeout=0.5)
+                                baudrate=baudrate, timeout=0.01)
         self._reset_pin = digitalio.DigitalInOut(board.BLE_CLR)
         self._reset_pin.direction = digitalio.Direction.OUTPUT
 

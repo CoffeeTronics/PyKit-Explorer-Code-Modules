@@ -49,14 +49,16 @@ WIDTH  = 240
 HEIGHT = 135
 
 class Colors:
-    BLACK  = 0x000000
-    WHITE  = 0xFFFFFF
-    RED    = 0xFF0000
-    GREEN  = 0x00FF00
-    BLUE   = 0x0000FF
-    ORANGE = 0xFF8000
-    YELLOW = 0xFFFF00
-    GRAY   = 0x888888
+    BLACK      = 0x000000
+    WHITE      = 0xFFFFFF
+    RED        = 0xFF0000
+    GREEN      = 0x00FF00
+    BLUE       = 0x0000FF
+    ORANGE     = 0xFF8000
+    YELLOW     = 0xFFFF00
+    GRAY       = 0x888888
+    DARK_BLUE  = 0x000080
+    DARK_GREEN = 0x003000
 
 class LCDDisplay:
     """Drive the 240×135 ST7789 TFT LCD on the Ruler baseboard.
@@ -244,6 +246,159 @@ class LCDDisplay:
             label.anchored_position = (WIDTH // 2, y)
             label.text = ""
             root.append(label)
+
+    # -- Scrolling label -----------------------------------------------------
+
+    def make_scroll_label(self, group: displayio.Group,
+                          x: int, y: int,
+                          color: int = Colors.YELLOW,
+                          scale: int = 2,
+                          scroll_width: int = 20,
+                          scroll_interval: float = 0.05,
+                          min_duration: float = 5.0) -> "ScrollLabel":
+        """Create a ScrollLabel and append it to *group*.
+
+        Parameters
+        ----------
+        group           : displayio.Group to append to
+        x, y            : pixel position (x=120 centres on a 240 px display)
+        color           : 24-bit RGB text colour
+        scale           : integer font scale
+        scroll_width    : visible character window width (default 20)
+        scroll_interval : seconds between scroll steps (default 0.05)
+        min_duration    : minimum seconds to display any message (default 5.0)
+
+        Returns
+        -------
+        ScrollLabel
+
+        Example
+        -------
+        >>> ble_lbl = lcd.make_scroll_label(group, 120, 55)
+        >>> ble_lbl.set("Hello world!")
+        >>> while True:
+        ...     if not ble_lbl.update(time.monotonic()):
+        ...         pass  # message expired, show something else
+        """
+        return ScrollLabel(group, x, y, color=color, scale=scale,
+                           scroll_width=scroll_width,
+                           scroll_interval=scroll_interval,
+                           min_duration=min_duration)
+
+
+class ScrollLabel:
+    """A label that automatically scrolls long messages character by character.
+
+    Created via LCDDisplay.make_scroll_label().
+
+    The display duration is calculated from the message length so that the
+    full message always scrolls into view before expiring. Short messages
+    (at or under scroll_width) are shown statically for min_duration seconds.
+
+    Parameters
+    ----------
+    group           : displayio.Group to append the label to
+    x, y            : pixel position
+    color           : 24-bit RGB text colour
+    scale           : integer font scale
+    scroll_width    : visible character window (default 20)
+    scroll_interval : seconds per scroll step (default 0.05)
+    min_duration    : minimum display time in seconds (default 5.0)
+
+    Example
+    -------
+    >>> ble_lbl = lcd.make_scroll_label(group, 120, 55)
+    >>> ble_lbl.set("A short message")
+    >>> ble_lbl.set("A much longer message that needs to scroll across the screen")
+    >>> while True:
+    ...     now = time.monotonic()
+    ...     if ble_lbl.update(now):
+    ...         temp_lbl.hidden = True
+    ...     else:
+    ...         temp_lbl.hidden = False
+    """
+
+    def __init__(self, group, x, y, color=Colors.YELLOW, scale=2,
+                 scroll_width=20, scroll_interval=0.05, min_duration=5.0):
+        self._lbl = _label.Label(
+            terminalio.FONT,
+            text="",
+            color=color,
+            scale=scale,
+            anchor_point=(0.5, 0.0),
+            anchored_position=(x, y),
+        )
+        self._lbl.hidden = True
+        group.append(self._lbl)
+
+        self._scroll_width    = scroll_width
+        self._scroll_interval = scroll_interval
+        self._min_duration    = min_duration
+
+        self._msg        = ""
+        self._pos        = 0
+        self._until      = 0.0
+        self._next_step  = 0.0
+
+    def set(self, text: str):
+        """Display *text*, scrolling if longer than scroll_width.
+
+        Calculates the display duration so the full message always completes
+        one scroll pass before expiring.
+
+        Parameters
+        ----------
+        text : message to display
+        """
+        self._msg       = text
+        self._pos       = 0
+        self._next_step = 0.0
+        self._lbl.hidden = False
+
+        now = time.monotonic()
+        if len(text) > self._scroll_width:
+            steps = len(text) - self._scroll_width + 1
+            self._until = now + max(self._min_duration,
+                                    steps * self._scroll_interval)
+        else:
+            self._until = now + self._min_duration
+
+    def update(self, now: float) -> bool:
+        """Advance the scroll and update the label. Call once per main loop.
+
+        Parameters
+        ----------
+        now : current time.monotonic() value
+
+        Returns
+        -------
+        True while a message is being displayed, False when it has expired.
+        """
+        if not self._msg or now >= self._until:
+            self._msg        = ""
+            self._lbl.hidden = True
+            return False
+
+        if len(self._msg) <= self._scroll_width:
+            self._lbl.text = self._msg
+        elif now >= self._next_step:
+            self._lbl.text = self._msg[self._pos:self._pos + self._scroll_width]
+            self._pos      = min(self._pos + 1,
+                                 len(self._msg) - self._scroll_width)
+            self._next_step = now + self._scroll_interval
+
+        return True
+
+    def clear(self):
+        """Immediately hide the label and discard the current message."""
+        self._msg        = ""
+        self._lbl.hidden = True
+        self._until      = 0.0
+
+    @property
+    def active(self) -> bool:
+        """True if a message is currently being displayed."""
+        return bool(self._msg)
 
     # -- Background ----------------------------------------------------------
 
