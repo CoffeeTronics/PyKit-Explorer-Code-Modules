@@ -458,6 +458,66 @@ from cpu_temp    import CPUTemperature
 from lcd_display import LCDDisplay, Colors
 from ble_uart    import BLEUart
 
+# Colour thresholds (�C)
+THRESH_WARN   = 30.0
+THRESH_HOT    = 35.0
+TEMP_INTERVAL = 1.0
+
+# Initialise hardware
+lcd  = LCDDisplay()
+temp = CPUTemperature()
+ble  = BLEUart()
+lcd.backlight_on()
+
+group, bg = lcd.make_group(Colors.BLACK)
+
+temp_lbl = lcd.add_label(group, "--.- C", 120, 55, color=Colors.GREEN, scale=3)
+ble_lbl  = lcd.make_scroll_label(group, 120, 55)
+
+temp_next = 0.0
+
+while True:
+    now      = time.monotonic()
+    incoming = ble.poll()
+
+    if ble.just_connected:
+        bg[0] = Colors.BLACK
+        ble_lbl.set("Connected")
+
+    if ble.just_disconnected:
+        bg[0] = Colors.BLACK
+        ble_lbl.set("Disconnected")
+
+    if incoming:
+        bg[0] = Colors.DARK_BLUE
+        ble_lbl.set(incoming.strip())
+
+    scrolling = ble_lbl.update(now)
+
+    if scrolling:
+        temp_lbl.hidden = True
+    else:
+        temp_lbl.hidden = False
+        bg[0]           = Colors.BLACK
+
+    if now >= temp_next:
+        c         = temp.celsius
+        temp_next = now + TEMP_INTERVAL
+        print(f"CPU Temp: {c:.1f} C")
+
+        if not scrolling:
+            if c < THRESH_WARN:
+                temp_lbl.color = Colors.GREEN
+            elif c <= THRESH_HOT:
+                temp_lbl.color = Colors.ORANGE
+            else:
+                temp_lbl.color = Colors.RED
+            temp_lbl.text = f"{c:.1f} C"
+
+        if ble.connected:
+            ble.send(f"Temp: {c:.1f}C\r\n")
+
+
 # Colour thresholds (°C)
 THRESH_WARN   = 30.0
 THRESH_HOT    = 35.0
