@@ -98,10 +98,10 @@ Both breakout modules require an `I2CBus` instance from `i2c_bus.py`. Pass its
 Ready-to-run programs that combine multiple modules. Each exposes a single
 `run()` entry point.
 
-| Tool                       | What it does                                                                                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pwm_waveform_explorer`  | Interactive oscilloscope: D3 steps frequency (100–3 kHz), A5 steps duty cycle (0–100 %);<br>live waveform on LCD, sine tone through speaker, LED brightness tracks duty cycle |
-| `synthio_sound_lab`      | Theremin synthesiser: IMU tilt y → pitch, tilt x → volume (3° dead zone), APDS proximity → pitch bend up;<br>D3 cycles waveform (SINE/SQUA/SAW/TRI); optional USB MIDI output |
+| Tool                      | What it does                                                                                                                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pwm_waveform_explorer` | Interactive oscilloscope: D3 steps frequency (100–3 kHz), A5 steps duty cycle (0–100 %);`<br>`live waveform on LCD, sine tone through speaker, LED brightness tracks duty cycle   |
+| `synthio_sound_lab`     | Theremin synthesiser: IMU tilt y → pitch, tilt x → volume (3° dead zone), APDS proximity → pitch bend up;`<br>`D3 cycles waveform (SINE/SQUA/SAW/TRI); optional USB MIDI output |
 
 ---
 
@@ -128,13 +128,13 @@ can_bus      ← CAN network
 
 Common multi-module patterns:
 
-| Goal | Modules |
-| ---- | ------- |
-| Theremin synthesiser | `imu_sensor` + `apds9960` + `synthio` + `lcd_display` |
-| PWM visualiser | `digital_io` + `cap_touch` + `audio_out` + `lcd_display` |
-| Data logger | `bme680` + `sd_card` + `lcd_display` |
-| BLE sensor stream | `imu_sensor` + `bme680` + `ble_uart` |
-| Gesture game | `apds9960` + `neopixels` + `lcd_display` |
+| Goal                 | Modules                                                          |
+| -------------------- | ---------------------------------------------------------------- |
+| Theremin synthesiser | `imu_sensor` + `apds9960` + `synthio` + `lcd_display`    |
+| PWM visualiser       | `digital_io` + `cap_touch` + `audio_out` + `lcd_display` |
+| Data logger          | `bme680` + `sd_card` + `lcd_display`                       |
+| BLE sensor stream    | `imu_sensor` + `bme680` + `ble_uart`                       |
+| Gesture game         | `apds9960` + `neopixels` + `lcd_display`                   |
 
 ---
 
@@ -224,7 +224,7 @@ ble  = BLEUart()
 temp = CPUTemperature()
 
 while True:
-    ble.receive()  # process connection status messages
+    ble.poll()  # process connection status messages
     if ble.connected:
         ble.send(f"Temp: {temp.formatted_string()}\n")
     time.sleep(2)
@@ -694,10 +694,10 @@ updating instantly with every button press.
 
 **Controls**
 
-| Input | Action |
-| ----- | ------ |
-| USER button (D3) | Step frequency: 100 → 200 → 500 → 1k → 2k → 3k Hz (wraps) |
-| CAP TOUCH pad (A5) | Step duty cycle: 0 → 10 → 20 → … → 100 → 0 % (wraps) |
+| Input              | Action                                                         |
+| ------------------ | -------------------------------------------------------------- |
+| USER button (D3)   | Step frequency: 100 → 200 → 500 → 1k → 2k → 3k Hz (wraps) |
+| CAP TOUCH pad (A5) | Step duty cycle: 0 → 10 → 20 → … → 100 → 0 % (wraps)     |
 
 **What you see on the LCD**
 
@@ -743,12 +743,12 @@ tilt. Keeping the board flat silences the output without stopping synthesis.
 
 **Controls**
 
-| Input | Action |
-| ----- | ------ |
-| USER button (D3) | Cycle waveform: SINE → SQUARE → SAW → TRIANGLE (wraps) |
-| Tilt left / right (Y-axis) | Pitch sweep across the selected range |
-| Tilt forward / back (X-axis) | Volume: <3° = silent, 45° = full |
-| Hand near APDS proximity | Pitch bends up by 0 to +2 semitones (closer = more bend) |
+| Input                        | Action                                                    |
+| ---------------------------- | --------------------------------------------------------- |
+| USER button (D3)             | Cycle waveform: SINE → SQUARE → SAW → TRIANGLE (wraps) |
+| Tilt left / right (Y-axis)   | Pitch sweep across the selected range                     |
+| Tilt forward / back (X-axis) | Volume: <3° = silent, 45° = full                        |
+| Hand near APDS proximity     | Pitch bends up by 0 to +2 semitones (closer = more bend)  |
 
 **What you see on the LCD**
 
