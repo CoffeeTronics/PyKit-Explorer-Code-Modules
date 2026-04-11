@@ -77,11 +77,26 @@ class AudioOutput:
     # -- Sine tone -----------------------------------------------------------
 
     def _make_sine(self, frequency: int, volume: float = 0.1) -> RawSample:
-        """Build a RawSample buffer for one cycle of a sine wave."""
-        length = max(1, 8000 // frequency)
+        """Build a RawSample buffer containing an integer number of sine cycles.
+
+        Uses GCD(sample_rate, frequency) to find the shortest buffer that holds
+        a whole number of complete cycles, so the loop point is always exact.
+
+        Example — 3000 Hz at 8000 Hz sample rate:
+            gcd(8000, 3000) = 1000  →  3 cycles in 8 samples  →  3000 Hz ✓
+            (the naive 8000 // 3000 = 2 samples produces two equal DC values
+            because sin(0) ≈ sin(π) ≈ 0, so the speaker never moves)
+        """
+        sample_rate = 8000
+        a, b = sample_rate, frequency
+        while b:
+            a, b = b, a % b
+        g = a
+        num_cycles = frequency // g        # complete sine cycles in the buffer
+        length     = sample_rate // g      # samples needed
         buf = array.array("H", [0] * length)
         for i in range(length):
-            buf[i] = int((1 + math.sin(math.pi * 2 * i / length))
+            buf[i] = int((1 + math.sin(math.pi * 2 * num_cycles * i / length))
                          * volume * (2 ** 15 - 1))
         return RawSample(buf)
 

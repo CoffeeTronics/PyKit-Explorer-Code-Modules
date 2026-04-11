@@ -60,6 +60,7 @@ class Colors:
     GRAY       = 0x888888
     DARK_BLUE  = 0x000080
     DARK_GREEN = 0x003000
+    CYAN       = 0x00FFFF
 
 class LCDDisplay:
     """Drive the 240×135 ST7789 TFT LCD on the Ruler baseboard.

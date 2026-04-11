@@ -662,6 +662,47 @@ All methods also return their results for programmatic use: `peek` returns an
 int (or bytearray when *length* > 1), and `dump` returns a dict mapping each
 register address to its value.
 
+### PWM Waveform Explorer
+
+An interactive oscilloscope-style tool for understanding PWM signals.
+Students adjust frequency and duty cycle in real time and see the effect
+across three simultaneous feedback channels: a scrolling graphical waveform
+on the LCD, a sine tone through the speaker, and LED brightness — all
+updating instantly with every button press.
+
+**Controls**
+
+| Input | Action |
+| ----- | ------ |
+| USER button (D3) | Step frequency: 100 → 200 → 500 → 1k → 2k → 3k Hz (wraps) |
+| CAP TOUCH pad (A5) | Step duty cycle: 0 → 10 → 20 → … → 100 → 0 % (wraps) |
+
+**What you see on the LCD**
+
+```
+PWM WAVEFORM EXPLORER
+FREQ   1000 Hz          ← flashes white on change
+DUTY     50 %           ← flashes white on change
+
+══════════              ← HIGH signal (bright green, scrolling)
+
+══════════              ← LOW signal  (bright green, scrolling)
+
+USER=freq   CAP TOUCH=duty
+```
+
+The waveform scrolls continuously left so the signal appears live.
+When a parameter changes, the corresponding row briefly flashes white
+to confirm which value was updated. The speaker volume scales with
+duty cycle — 0 % is silent, 100 % is loudest.
+
+```python
+import pykit_explorer
+from pwm_waveform_explorer import run
+
+run()
+```
+
 ---
 
 - **HID** requires `usb_hid.enable()` in `boot.py`.
