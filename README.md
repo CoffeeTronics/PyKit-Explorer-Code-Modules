@@ -41,7 +41,9 @@ CIRCUITPY/
     ├── sd_card.py
     ├── bme680.py            ← I2C breakout modules (QWIIC)
     ├── apds9960.py
-    └── async_tasks.py       ← Utility modules
+    ├── async_tasks.py       ← Utility modules
+    ├── pwm_waveform_explorer.py  ← Tools
+    └── synthio_sound_lab.py
 ```
 
 ---
@@ -91,6 +93,16 @@ Both breakout modules require an `I2CBus` instance from `i2c_bus.py`. Pass its
 | --------------- | --------------- | ---------------------------------------------------------------------------------------- |
 | `async_tasks` | `AsyncRunner` | Lightweight asyncio wrapper; add coroutines and run them concurrently with a single call |
 
+### Tools
+
+Ready-to-run programs that combine multiple modules. Each exposes a single
+`run()` entry point.
+
+| Tool                       | What it does                                                                                                                                          |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pwm_waveform_explorer`  | Interactive oscilloscope: D3 steps frequency (100–3 kHz), A5 steps duty cycle (0–100 %);<br>live waveform on LCD, sine tone through speaker, LED brightness tracks duty cycle |
+| `synthio_sound_lab`      | Theremin synthesiser: IMU tilt y → pitch, tilt x → volume (3° dead zone), APDS proximity → pitch bend up;<br>D3 cycles waveform (SINE/SQUA/SAW/TRI); optional USB MIDI output |
+
 ---
 
 ## Choosing Modules for Your Project
@@ -109,10 +121,20 @@ apds9960     ← proximity        audio_out     → sound / music
 apds9960     ← gesture          ble_uart      → wireless data
 apds9960     ← color            sd_card       → data logging
 i2c_bus      ← I2C devices      hid_input     → PC automation
-spi_bus      ← SPI devices
+spi_bus      ← SPI devices      synthio       → real-time synthesis
 uart_comms   ← serial devices
 can_bus      ← CAN network
 ```
+
+Common multi-module patterns:
+
+| Goal | Modules |
+| ---- | ------- |
+| Theremin synthesiser | `imu_sensor` + `apds9960` + `synthio` + `lcd_display` |
+| PWM visualiser | `digital_io` + `cap_touch` + `audio_out` + `lcd_display` |
+| Data logger | `bme680` + `sd_card` + `lcd_display` |
+| BLE sensor stream | `imu_sensor` + `bme680` + `ble_uart` |
+| Gesture game | `apds9960` + `neopixels` + `lcd_display` |
 
 ---
 
@@ -699,6 +721,55 @@ duty cycle — 0 % is silent, 100 % is loudest.
 ```python
 import pykit_explorer
 from pwm_waveform_explorer import run
+
+run()
+```
+
+---
+
+### Synthio Sound Lab
+
+A real-time theremin-style synthesizer driven entirely by onboard sensors.
+Tilt the board to sweep pitch across four octaves, tilt the opposite axis to
+control volume, and hover your hand over the proximity sensor to bend the note
+up by up to two semitones — all while watching the parameters update live on
+the LCD.  Four waveforms (sine, square, sawtooth, triangle) let students hear
+how waveshape changes timbre.  Optional USB MIDI output is enabled
+automatically when the host supports it.
+
+The note plays continuously. Tilting forward or back controls volume —
+a 3° dead zone around flat keeps the output silent until you intentionally
+tilt. Keeping the board flat silences the output without stopping synthesis.
+
+**Controls**
+
+| Input | Action |
+| ----- | ------ |
+| USER button (D3) | Cycle waveform: SINE → SQUARE → SAW → TRIANGLE (wraps) |
+| Tilt left / right (Y-axis) | Pitch sweep across the selected range |
+| Tilt forward / back (X-axis) | Volume: <3° = silent, 45° = full |
+| Hand near APDS proximity | Pitch bends up by 0 to +2 semitones (closer = more bend) |
+
+**What you see on the LCD**
+
+```
+   SYNTHIO SOUND LAB
+   WAVE  SINE               <- current waveform (purple)
+   NOTE C4    262Hz         <- note name + frequency (cyan)
+
+VOL |||||||||               <- green bar, width = volume
+BND ||                      <- orange bar, width = bend amount
+    ----------|----------   <- cyan needle tracks tilt position
+
+   D3=wave   TILT=vol
+```
+
+Requires the ICM20948 IMU (on-board) and an APDS9960 proximity breakout
+connected to the QWIIC connector.
+
+```python
+import pykit_explorer
+from synthio_sound_lab import run
 
 run()
 ```
