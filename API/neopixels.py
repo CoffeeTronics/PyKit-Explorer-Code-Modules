@@ -29,16 +29,18 @@ except ImportError:
         pos -= 170
         return (pos * 3, 0, 255 - pos * 3)
 
+OFF = 0x000000
 
-# Named colours
-RED     = (255,   0,   0)
-GREEN   = (  0, 255,   0)
-BLUE    = (  0,   0, 255)
-WHITE   = (255, 255, 255)
-YELLOW  = (255, 150,   0)
-CYAN    = (  0, 255, 255)
-PURPLE  = (180,   0, 255)
-OFF     = (  0,   0,   0)
+class Colors:
+    
+    WHITE      = 0xFFFFFF
+    RED        = 0xFF0000
+    GREEN      = 0x00FF00
+    BLUE       = 0x0000FF
+    ORANGE     = 0xFF8000
+    YELLOW     = 0xFFFF00
+    CYAN       = 0x00FFFF
+    PURPLE     = 0xB400FF
 
 
 class NeoPixels:

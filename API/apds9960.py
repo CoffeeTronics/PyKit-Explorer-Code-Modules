@@ -43,23 +43,23 @@ Use this module for:
 import time
 from adafruit_apds9960.apds9960 import APDS9960
 
+class Gestures:
+    # Gesture constants — match the values returned by apds.gesture()
+    GESTURE_NONE  = 0x0
+    GESTURE_UP    = 0x1
+    GESTURE_DOWN  = 0x2
+    GESTURE_LEFT  = 0x3
+    GESTURE_RIGHT = 0x4
 
-# Gesture constants — match the values returned by apds.gesture()
-GESTURE_NONE  = 0x0
-GESTURE_UP    = 0x1
-GESTURE_DOWN  = 0x2
-GESTURE_LEFT  = 0x3
-GESTURE_RIGHT = 0x4
-
-# Human-readable gesture labels
-GESTURE_NAMES = {
-    GESTURE_NONE:  "NONE",
-    GESTURE_UP:    "UP",
-    GESTURE_DOWN:  "DOWN",
-    GESTURE_LEFT:  "LEFT",
-    GESTURE_RIGHT: "RIGHT",
-}
-
+class Gesture_Names:
+    # Human-readable gesture labels
+    GESTURE_NAMES = {
+        Gestures.GESTURE_NONE:  "NONE",
+        Gestures.GESTURE_UP:    "UP",
+        Gestures.GESTURE_DOWN:  "DOWN",
+        Gestures.GESTURE_LEFT:  "LEFT",
+        Gestures.GESTURE_RIGHT: "RIGHT",
+    }
 
 class APDS9960Sensor:
     """Interface to the APDS9960 proximity, gesture, and color sensor.
@@ -181,7 +181,8 @@ class APDS9960Sensor:
         """
         if gesture_value is None:
             gesture_value = self.gesture()
-        return GESTURE_NAMES.get(gesture_value, "UNKNOWN")
+        return Gesture_Names.GESTURE_NAMES.get(gesture_value, "UNKNOWN")
+
 
     def wait_for_gesture(self, timeout: float = 5.0) -> int:
         """Block until a non-zero gesture is detected or *timeout* expires.
@@ -197,9 +198,9 @@ class APDS9960Sensor:
         start = time.monotonic()
         while time.monotonic() - start < timeout:
             g = self._apds.gesture()
-            if g != GESTURE_NONE:
+            if g != Gestures.GESTURE_NONE:
                 return g
-        return GESTURE_NONE
+        return Gestures.GESTURE_NONE
 
     # -- Color ---------------------------------------------------------------
 

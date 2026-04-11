@@ -116,15 +116,13 @@ can_bus      ← CAN network
 
 ---
 
-## Installation
+## How to use the API
 
-1. Copy the module files you need into the `/API` folder on your `CIRCUITPY` drive.
-2. At the top of `code.py`, add `/API` to the module search path, then import as normal:
+1. At the top of `code.py`, add `import pykit_explorer`. This allows the user to leverage the functionality of the API to greatly simplify their project.
+2. To use individual libraries in the API, import that filename and the name of the class and/or variables you want to use. See example below.
 
 ```python
 import pykit_explorer
-
-import board
 from digital_io import DigitalInput, EdgeDetector
 from neopixels  import NeoPixels, RED, GREEN
 from imu_sensor import IMUSensor
@@ -138,9 +136,6 @@ from imu_sensor import IMUSensor
 
 ```python
 import pykit_explorer
-import time
-
-import board
 from digital_io import DigitalOutput
 
 led = DigitalOutput(board.LED)
@@ -154,13 +149,27 @@ while True:
 
 ---
 
+## Minimal Example — Read User Button
+
+```python
+import pykit_explorer
+from digital_io import DigitalInput
+
+btn = DigitalInput(board.D3)
+
+while True:
+    print(f'Value:	    {btn.value}')
+    print(f'is pressed: {btn.is_pressed()}')
+```
+
+---
+
 ## Minimal Example — Tilt-controlled NeoPixel colours
 
 ```python
 import pykit_explorer
-import board
 from imu_sensor import IMUSensor
-from neopixels  import NeoPixels, RED, GREEN, BLUE, YELLOW, OFF
+from neopixels  import NeoPixels, Colors, OFF
 
 imu = IMUSensor()
 px  = NeoPixels()
@@ -168,15 +177,16 @@ px  = NeoPixels()
 while True:
     direction = imu.tilt_direction()
     if direction == "LEFT":
-        px.fill(RED)
+        px.fill(Colors.RED)
     elif direction == "RIGHT":
-        px.fill(BLUE)
+        px.fill(Colors.BLUE)
     elif direction == "UP":
-        px.fill(GREEN)
+        px.fill(Colors.GREEN)
     elif direction == "DOWN":
-        px.fill(YELLOW)
+        px.fill(Colors.YELLOW)
     else:
         px.off()
+
 ```
 
 ---
@@ -202,12 +212,9 @@ while True:
 
 ```python
 import pykit_explorer
-import time
-
-import board
 from i2c_bus import I2CBus
 from bme680 import BME680Sensor
-from neopixels import NeoPixels, GREEN, YELLOW, RED, BLUE
+from neopixels import NeoPixels, Colors
 
 my_i2c = I2CBus()
 sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
@@ -217,14 +224,15 @@ while True:
     sensor.print_all()
     level = sensor.temperature_level()
     if level == "LOW":
-        px.fill(BLUE)
+        px.fill(Colors.BLUE)
     elif level == "MED":
-        px.fill(GREEN)
+        px.fill(Colors.GREEN)
     elif level == "HIGH":
-        px.fill(YELLOW)
+        px.fill(Colors.YELLOW)
     else:
-        px.fill(RED)
+        px.fill(Colors.RED)
     time.sleep(1)
+
 ```
 
 ---
@@ -233,10 +241,8 @@ while True:
 
 ```python
 import pykit_explorer
-
-import board
 from i2c_bus import I2CBus
-from apds9960 import APDS9960Sensor, GESTURE_UP, GESTURE_DOWN, GESTURE_LEFT, GESTURE_RIGHT
+from apds9960 import APDS9960Sensor, Gestures, Gesture_Names
 from audio_out import AudioOutput
 
 my_i2c = I2CBus()
@@ -246,15 +252,16 @@ audio  = AudioOutput()
 sensor.enable_gesture()
 
 while True:
-    g = sensor.gesture()
-    if g == GESTURE_UP:
+    g = sensor.wait_for_gesture()
+    if g == Gestures.GESTURE_UP:
         audio.play_wav("AudioFiles/304.wav")
-    elif g == GESTURE_DOWN:
+    elif g == Gestures.GESTURE_DOWN:
         audio.play_wav("AudioFiles/140.wav")
-    elif g == GESTURE_LEFT:
+    elif g == Gestures.GESTURE_LEFT:
         audio.play_wav("AudioFiles/210.wav")
-    elif g == GESTURE_RIGHT:
+    elif g == Gestures.GESTURE_RIGHT:
         audio.play_wav("AudioFiles/320.wav")
+
 ```
 
 ---
@@ -263,9 +270,6 @@ while True:
 
 ```python
 import pykit_explorer
-import time
-
-import board
 from i2c_bus import I2CBus
 from apds9960 import APDS9960Sensor
 from neopixels import NeoPixels
@@ -289,18 +293,18 @@ Place your `.bmp` image files in the `/Images` folder on the CIRCUITPY drive.
 
 ```python
 import pykit_explorer
-
 from lcd_display import LCDDisplay
 
 lcd = LCDDisplay()
 lcd.backlight_on()
 
 # load_sprite() loads the BMP and returns a positioned displayio.Group
-group = lcd.load_sprite("/Images/Bluey_Family.BMP", 240, 135, x=0, y=0)
+group = lcd.load_sprite("/Images/Bluey_Family.BMP")
 lcd.display.root_group = group
 
 while True:
     pass
+
 ```
 
 > **Note:** BMP images should match the display resolution (240×135) for best results.
@@ -315,8 +319,6 @@ This example initialises the LCD and then uses `print()` as a simple terminal.
 
 ```python
 import pykit_explorer
-import time
-
 from lcd_display import LCDDisplay
 
 lcd = LCDDisplay()
@@ -344,13 +346,10 @@ the line colours stay fixed.
 
 ```python
 import pykit_explorer
-import time
-
 import displayio
 from adafruit_bitmap_font import bitmap_font
 from adafruit_display_text import label
-
-from lcd_display import LCDDisplay
+from lcd_display import LCDDisplay, Colors
 
 lcd = LCDDisplay()
 lcd.backlight_on()
@@ -358,9 +357,8 @@ lcd.backlight_on()
 # Load font
 font = bitmap_font.load_font("/Fonts/Helvetica-Bold-16.bdf")
 
-# Fixed line colours (purple, blue, red, green)
-LINE_COLORS = [0xFF00FF, 0x0000FF, 0xFF0000, 0x00FF00]
-LINE_Y = [20, 50, 80, 110]
+LINE_COLORS = [Colors.PURPLE, Colors.BLUE, Colors.RED, Colors.GREEN] # Colours for each line of text
+LINE_Y = [20, 50, 80, 110] # Y positions for each line of text
 
 # Create four text labels with fixed colours and positions
 labels = []
@@ -394,6 +392,7 @@ while True:
     texts = [texts[-1]] + texts[:-1]
     for i in range(4):
         labels[i].text = texts[i]
+
 ```
 
 > **Note:** Colour values are 24-bit hex `0xRRGGBB`. Font files (`.bdf`) should be
@@ -407,28 +406,26 @@ Requires the `asyncio` library in `/lib`.
 
 ```python
 import pykit_explorer
-
-import board
-import neopixel
+from neopixels import NeoPixels, Colors, OFF
 from async_tasks import AsyncRunner
 
-pixels = neopixel.NeoPixel(board.NEOPIXEL, 5, brightness=0.05, auto_write=True)
-OFF = (0, 0, 0)
+pixels = NeoPixels()
 
 async def blink(pixel: int, interval: float, count: int, color: tuple):
     for _ in range(count):
-        pixels[pixel] = color
+        pixels.set(pixel, color)
         await AsyncRunner.sleep(interval)
-        pixels[pixel] = OFF
+        pixels.set(pixel, OFF)
         await AsyncRunner.sleep(interval)
 
 runner = AsyncRunner()
-runner.add(blink(0, 0.30, 15, (255, 0, 255)))
-runner.add(blink(1, 0.75, 10, (0, 255, 0)))
-runner.add(blink(2, 1.00, 10, (255, 0, 0)))
-runner.add(blink(3, 0.50, 10, (255, 150, 0)))
-runner.add(blink(4, 0.25, 15, (0, 0, 255)))
+runner.add(blink(0, 0.30, 15, Colors.PURPLE))
+runner.add(blink(1, 0.75, 10, Colors.GREEN))
+runner.add(blink(2, 1.00, 10, Colors.RED))
+runner.add(blink(3, 0.50, 10, Colors.YELLOW))
+runner.add(blink(4, 0.25, 15, Colors.BLUE))
 runner.run()
+
 ```
 
 > **Note:** All tasks run cooperatively — use `await AsyncRunner.sleep()` (not
@@ -452,71 +449,9 @@ label — it owns all scroll state internally so the main loop stays simple.
 
 ```python
 import pykit_explorer
-import time
-
 from cpu_temp    import CPUTemperature
 from lcd_display import LCDDisplay, Colors
 from ble_uart    import BLEUart
-
-# Colour thresholds (�C)
-THRESH_WARN   = 30.0
-THRESH_HOT    = 35.0
-TEMP_INTERVAL = 1.0
-
-# Initialise hardware
-lcd  = LCDDisplay()
-temp = CPUTemperature()
-ble  = BLEUart()
-lcd.backlight_on()
-
-group, bg = lcd.make_group(Colors.BLACK)
-
-temp_lbl = lcd.add_label(group, "--.- C", 120, 55, color=Colors.GREEN, scale=3)
-ble_lbl  = lcd.make_scroll_label(group, 120, 55)
-
-temp_next = 0.0
-
-while True:
-    now      = time.monotonic()
-    incoming = ble.poll()
-
-    if ble.just_connected:
-        bg[0] = Colors.BLACK
-        ble_lbl.set("Connected")
-
-    if ble.just_disconnected:
-        bg[0] = Colors.BLACK
-        ble_lbl.set("Disconnected")
-
-    if incoming:
-        bg[0] = Colors.DARK_BLUE
-        ble_lbl.set(incoming.strip())
-
-    scrolling = ble_lbl.update(now)
-
-    if scrolling:
-        temp_lbl.hidden = True
-    else:
-        temp_lbl.hidden = False
-        bg[0]           = Colors.BLACK
-
-    if now >= temp_next:
-        c         = temp.celsius
-        temp_next = now + TEMP_INTERVAL
-        print(f"CPU Temp: {c:.1f} C")
-
-        if not scrolling:
-            if c < THRESH_WARN:
-                temp_lbl.color = Colors.GREEN
-            elif c <= THRESH_HOT:
-                temp_lbl.color = Colors.ORANGE
-            else:
-                temp_lbl.color = Colors.RED
-            temp_lbl.text = f"{c:.1f} C"
-
-        if ble.connected:
-            ble.send(f"Temp: {c:.1f}C\r\n")
-
 
 # Colour thresholds (°C)
 THRESH_WARN   = 30.0
@@ -552,30 +487,28 @@ while True:
         bg[0] = Colors.DARK_BLUE
         ble_lbl.set(incoming.strip())
 
+    if now >= temp_next:
+        c         = temp.celsius
+        temp_next = now + TEMP_INTERVAL
+
+        if c < THRESH_WARN:
+            temp_lbl.color = Colors.GREEN
+        elif c <= THRESH_HOT:
+            temp_lbl.color = Colors.ORANGE
+        else:
+            temp_lbl.color = Colors.RED
+        temp_lbl.text = f"{c:.1f} C"
+        print(f"CPU Temp: {c:.1f} C")
+        if ble.connected:
+            ble.send(f"Temp: {c:.1f}C\n")
+
     if ble_lbl.update(now):
         temp_lbl.hidden = True
     else:
         temp_lbl.hidden = False
         bg[0]           = Colors.BLACK
 
-        if now >= temp_next:
-            c         = temp.celsius
-            temp_next = now + TEMP_INTERVAL
 
-            if c < THRESH_WARN:
-                temp_lbl.color = Colors.GREEN
-            elif c <= THRESH_HOT:
-                temp_lbl.color = Colors.ORANGE
-            else:
-                temp_lbl.color = Colors.RED
-            temp_lbl.text = f"{c:.1f} C"
-
-    if now >= temp_next:
-        c         = temp.celsius
-        temp_next = now + TEMP_INTERVAL
-        print(f"CPU Temp: {c:.1f} C")
-        if ble.connected:
-            ble.send(f"Temp: {c:.1f}C\n")
 ```
 
 ---
