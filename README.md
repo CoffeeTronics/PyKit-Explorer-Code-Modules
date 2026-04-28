@@ -1,5 +1,10 @@
 # PyKit Ruler — CircuitPython Module Library
 
+Before starting, please read the **pykit_python_primer.html** file. Open it in your browser of choice.
+
+**Note:** You do **NOT** need to be proficient in Python programming to use this kit. The pykit_python_primer
+teaches everything you to know to use this kit and build cool projects
+
 ## Workshop/Hackathon Reference
 
 This library provides APIs for all of the hardware on the Microchip Curiosity PyKit Explorer.
