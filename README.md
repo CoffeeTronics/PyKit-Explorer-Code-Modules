@@ -3,7 +3,10 @@
 Before starting, please read the **pykit_python_primer.html** file. Open it in your browser of choice.
 
 **Note:** You do **NOT** need to be proficient in Python programming to use this kit. The pykit_python_primer
-teaches everything you to know to use this kit and build cool projects
+teaches everything you to know to use this kit and build cool projects.
+
+**Important Note:**  If you have problems after downloading the GitHub repo, when opening the PowerPoint file where the file gives the message: "PowerPoint found a problem with content.....PowerPoint can attempt to repair the file"
+in the GitHub repo, click on the link to the file *UC_CircuitPython_Workshop.pptx* and click the **Download raw file** button to download the file. Then open normally.
 
 ## Workshop/Hackathon Reference
 
