@@ -51,6 +51,7 @@ CIRCUITPY/
     ├── apds9960.py
     ├── async_tasks.py       ← Utility modules
     ├── pwm_waveform_explorer.py  ← Tools
+    ├── analog_waveform_explorer.py
     └── synthio_sound_lab.py
 ```
 
@@ -109,6 +110,7 @@ Ready-to-run programs that combine multiple modules. Each exposes a single
 | Tool                      | What it does                                                                                                                                                                            |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pwm_waveform_explorer` | Interactive oscilloscope: D3 steps frequency (100–3 kHz), A5 steps duty cycle (0–100 %);`<br>`live waveform on LCD, sine tone through speaker, LED brightness tracks duty cycle   |
+| `analog_waveform_explorer` | Triggered oscilloscope: short press D3 steps timebase (10 ms/px → 200 µs/px), long press cycles channels A0–A5; displays Vpp, frequency, and period; per-channel colour coding; max useful signal ~400 Hz |
 | `synthio_sound_lab`     | Theremin synthesiser: IMU tilt y → pitch, tilt x → volume (3° dead zone), APDS proximity → pitch bend up;`<br>`D3 cycles waveform (SINE/SQUA/SAW/TRI); optional USB MIDI output |
 
 ---
@@ -729,6 +731,94 @@ duty cycle — 0 % is silent, 100 % is loudest.
 ```python
 import pykit_explorer
 from pwm_waveform_explorer import run
+
+run()
+```
+
+---
+
+### Analog Waveform Explorer
+
+A triggered oscilloscope-style display for all six analog input pins (A0–A5).
+The scope waits for a rising edge on the selected channel, captures a complete
+frame of samples, freezes it on the LCD, then immediately arms for the next
+trigger. Because the display only updates when a full frame is ready, the
+waveform is always stable and phase-aligned — it does not scroll.
+
+Each channel has a distinct colour so you can tell at a glance which signal
+you are watching: A0=cyan, A1=green, A2=yellow, A3=orange, A4=red, A5=purple.
+
+**Controls**
+
+| Input                    | Action                                       |
+| ------------------------ | -------------------------------------------- |
+| Short press D3 (< 0.8 s) | Step timebase: 10ms/px → 5ms → 2ms → 1ms → 500µs → 200µs (wraps) |
+| Long press D3 (≥ 0.8 s)  | Next channel: A0→A1→A2→A3→A4→A5 (wraps)     |
+
+**Timebase guide — choosing the right scale**
+
+Pick the scale where your signal fills roughly half the display width or more.
+If the waveform looks like a flat line, the signal is too slow — use a slower
+(higher ms/px) scale. If it looks like a solid block of colour, the signal is
+too fast — use a faster (lower ms/px) scale.
+
+| Scale     | Window    | Good for         |
+| --------- | --------- | ---------------- |
+| 10 ms/px  | 2.32 s    | 0.4–10 Hz        |
+|  5 ms/px  | 1.16 s    | 1–20 Hz          |
+|  2 ms/px  |  464 ms   | 4–50 Hz          |
+|  1 ms/px  |  232 ms   | 10–100 Hz        |
+| 500 µs/px |  116 ms   | 50–165 Hz        |
+| 200 µs/px |   46 ms   | 100–400 Hz       |
+
+> **Maximum frequency:** ~400 Hz. Above this the sample rate (≈ 4 kHz) no
+> longer provides enough points per cycle for a recognisable waveform.
+> The hardware limit is set by CircuitPython loop overhead, not the ADC itself.
+
+**What you see on the LCD**
+
+```
+ANALOG WAVEFORM EXPLORER
+A0  3.28Vpp  10.0Hz  100.0ms   <- channel | peak-to-peak voltage | freq | period
+10ms/px  2.32s                 <- current timebase and capture window
+
++-------------------------------+
+|      *                        |  <- frozen triggered waveform
+|   *     *                     |     trigger crossing is at x=46 (20% from left)
+|*           *               *  |     amplitude fills full height = 3.3 Vpp
+|              *           *    |
+|                *       *      |
+|                  *   *        |
+|                    *          |
++-------------------------------+
+
+PRESS=scale  HOLD=ch
+```
+
+**Reading the measurements**
+
+- **Vpp** — peak-to-peak voltage across the captured frame. A 0–3.3 V
+  signal reads 3.30 Vpp. A signal that only swings between 1 V and 2 V
+  reads 1.00 Vpp.
+- **Frequency / Period** — measured from the trigger crossing to the next
+  rising mid-scale crossing in the same frame. Shows `---` if only one
+  cycle fits (or less than one cycle) — select a slower scale to bring a
+  second crossing into view.
+
+**Trigger**
+
+The scope triggers on a rising edge through 1.65 V (mid-scale on a 3.3 V
+rail). If the display freezes and never updates, check that:
+
+1. The signal is actually crossing 1.65 V on its rising edge.
+2. The signal amplitude is large enough to cross mid-scale (a 0.1 V signal
+   sitting at 1.0 V will never trigger).
+3. The timebase is not so slow that each frame takes a very long time to fill
+   (at 10 ms/px a frame takes 2.32 s to capture).
+
+```python
+import pykit_explorer
+from analog_waveform_explorer import run
 
 run()
 ```
