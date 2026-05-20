@@ -20,7 +20,7 @@ Use this module for:
   - Debugging timer conflicts between user code and board-level peripherals
   - Generating a reference list before writing PWM-based drivers
 
-Example
+Example to find which pins support PWM on your board:
 -------
 >>> import pykit_explorer
 >>> from pwm_pins import PWMPinScanner

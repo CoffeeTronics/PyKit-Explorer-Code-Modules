@@ -32,13 +32,23 @@ class PWMOutput:
 
     Example
     -------
+    >>> import pykit_explorer
     >>> from pwm_out import PWMOutput
-    >>> pwm = PWMOutput(board.D5, frequency=1000)
-    >>> pwm.duty_percent = 50      # 50% duty cycle
-    >>> pwm.frequency = 440        # change to 440 Hz tone
+    >>> try:
+    ...     pwm = PWMOutput(board.D5)
+    ...     print("PWM initialized on pin D5")
+    ... except Exception as e:
+    ...     print("Error initializing PWMOutput:", e)
+    ...     pwm.deinit()
+    ... except Exception as e:
+    ...     print("Error initializing PWMOutput:", e)
+    ...     pwm.deinit()
+    ... pwm.duty_percent = 50
+    ... while True:    pass
     """
 
     def __init__(self, pin=board.D5, frequency: int = 5000, duty_cycle: int = 0):
+        """Initialize PWM output. Frequency cannot be changed after creation."""
         self._pwm = pwmio.PWMOut(pin, frequency=frequency, duty_cycle=duty_cycle)
 
     # -- Duty cycle ----------------------------------------------------------
@@ -66,11 +76,8 @@ class PWMOutput:
 
     @property
     def frequency(self) -> int:
+        """PWM frequency in Hz (read-only; set during initialization)."""
         return self._pwm.frequency
-
-    @frequency.setter
-    def frequency(self, hz: int):
-        self._pwm.frequency = hz
 
     # -- Convenience helpers -------------------------------------------------
 
