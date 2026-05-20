@@ -54,11 +54,13 @@ class NeoPixels:
 
     Example
     -------
-    >>> from neopixels import NeoPixels, RED, GREEN, BLUE, OFF
+    >>> import pykit_explorer
+    >>> from neopixels import NeoPixels, Colors
     >>> px = NeoPixels()
-    >>> px.fill(RED)          # all red
-    >>> px.set(2, GREEN)      # pixel 2 green only
-    >>> px.rainbow_cycle()    # blocking rainbow animation
+    >>> px.fill(Colors.RED)          # all red
+    >>> px.set(2, Colors.GREEN)      # pixel 2 green only
+    >>> while True:
+    ...    px.rainbow_cycle()    # blocking rainbow animation
     """
 
     def __init__(self, pin=board.NEOPIXEL, num_pixels: int = 5,
