@@ -27,15 +27,17 @@ class CapTouch:
     ----------
     pin : capacitive-touch capable pin (default board.A5 / CAP1)
 
-    Example
+    Example - if User button pressed it will type "Hello, world!" and if the capacitive 
+    pad is touched it will send Ctrl-Alt-Delete 
     -------
+    >>> import pykit_explorer
     >>> from cap_touch import CapTouch
-    >>> pad = CapTouch(board.A5)
+    >>> touch = CapTouch(board.A5)
     >>> while True:
-    ...     pad.update()
-    ...     if pad.just_touched:
+    ...     touch.update()
+    ...     if touch.just_touched:
     ...         print("Touched!")
-    ...     if pad.just_released:
+    ...     elif touch.just_released:
     ...         print("Released!")
     """
 

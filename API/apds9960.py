@@ -26,6 +26,7 @@ Usage
 -----
   Pass the .bus property from an i2c_bus.I2CBus instance:
 
+  >>> import pykit_explorer
   >>> from i2c_bus import I2CBus
   >>> from apds9960 import APDS9960Sensor
   >>> my_i2c = I2CBus()
@@ -70,6 +71,7 @@ class APDS9960Sensor:
 
     Example — proximity
     -------------------
+    >>> import pykit_explorer
     >>> from i2c_bus import I2CBus
     >>> from apds9960 import APDS9960Sensor
     >>> my_i2c = I2CBus()
@@ -77,9 +79,15 @@ class APDS9960Sensor:
     >>> sensor.enable_proximity()
     >>> while True:
     ...     print(sensor.proximity)
+    ...     time.sleep(0.5)
+
 
     Example — gesture
     -----------------
+    >>> from i2c_bus import I2CBus
+    >>> from apds9960 import APDS9960Sensor
+    >>> my_i2c = I2CBus()
+    >>> sensor = APDS9960Sensor(my_i2c.bus)
     >>> sensor.enable_gesture()
     >>> while True:
     ...     g = sensor.gesture()
@@ -88,9 +96,15 @@ class APDS9960Sensor:
 
     Example — color
     ---------------
+    >>> import pykit_explorer
+    >>> from i2c_bus import I2CBus
+    >>> from apds9960 import APDS9960Sensor
+    >>> my_i2c = I2CBus()
+    >>> sensor = APDS9960Sensor(my_i2c.bus)
     >>> sensor.enable_color()
-    >>> r, g, b, c = sensor.color
-    >>> neopixel_color = sensor.color_as_neopixel()
+    >>> while True:
+    ...     r, g, b, c = sensor.color
+    ...     print(f"RED:{r}  GREEN:{g}  BLUE:{b}  CLEAR:{c}")
     """
 
     def __init__(self, i2c):

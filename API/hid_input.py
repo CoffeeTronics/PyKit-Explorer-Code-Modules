@@ -40,11 +40,20 @@ class HIDKeyboard:
 
     Example
     -------
+    >>> import pykit_explorer
     >>> from hid_input import HIDKeyboard
     >>> from adafruit_hid.keycode import Keycode
+    >>> from digital_io import DigitalInput
+    >>> from cap_touch import CapTouch
     >>> kbd = HIDKeyboard()
-    >>> kbd.type("Hello, world!\\n")
-    >>> kbd.press_combo(Keycode.CONTROL, Keycode.C)    # Ctrl-C
+    >>> btn = DigitalInput(board.D3)
+    >>> touch = CapTouch(board.A5)
+    >>> while True:
+    ...     touch.update()
+    ...     if btn.is_pressed():
+    ...         kbd.type("Hello, world!\\n")
+    ...     elif touch.just_touched:
+    ...         kbd.press_combo(Keycode.CONTROL, Keycode.ALT, Keycode.DELETE)
     """
 
     def __init__(self):
@@ -92,10 +101,19 @@ class HIDMouse:
 
     Example
     -------
+    >>> import pykit_explorer 
     >>> from hid_input import HIDMouse
+    >>> from digital_io import DigitalInput
+    >>> from cap_touch import CapTouch
+    >>> btn = DigitalInput(board.D3)
     >>> mouse = HIDMouse()
-    >>> mouse.move(x=10, y=-5)        # right 10, up 5
-    >>> mouse.click_left()
+    >>> touch = CapTouch(board.A5)
+    >>> while True:
+    ...     touch.update()
+    ...     if btn.is_pressed():
+    ...         mouse.move(x=10, y=-5)        # right 10, up 5
+    ...     elif touch.just_touched:    
+    ...         mouse.click_left()
     """
 
     def __init__(self):

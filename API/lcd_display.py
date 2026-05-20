@@ -4,6 +4,7 @@ lcd_display.py — ST7789 TFT LCD Display
 Board: Ruler Baseboard
 
 Initialises the 240×135 pixel ST7789 TFT LCD and exposes helpers for:
+  - Drawing shapes (rectangles, circles, lines)
   - Drawing filled rectangles and backgrounds
   - Displaying BMP sprite sheets / images
   - Animating positioned displayio Groups (for sprites or text)
@@ -18,8 +19,9 @@ Hardware pins (defined in the Ruler board variant)
 
 Requires
 --------
-  adafruit_st7789     (display driver)
-  adafruit_imageload  (BMP sprite loading)
+  adafruit_st7789        (display driver)
+  adafruit_display_shapes (shape primitives)
+  adafruit_imageload     (BMP sprite loading)
   fourwire / displayio
 
 Use this module for:
@@ -36,6 +38,9 @@ import terminalio
 import adafruit_imageload
 import time
 from adafruit_display_text import label as _label
+from adafruit_display_shapes.rect import Rect
+from adafruit_display_shapes.circle import Circle
+from adafruit_display_shapes.line import Line
 
 try:
     from fourwire import FourWire
@@ -65,14 +70,15 @@ class Colors:
 class LCDDisplay:
     """Drive the 240×135 ST7789 TFT LCD on the Ruler baseboard.
 
-    Example
+    Example - creates a red background and leaves it on screen:
     -------
+    >>> import pykit_explorer
     >>> from lcd_display import LCDDisplay
     >>> lcd = LCDDisplay()
     >>> lcd.backlight_on()
-    >>> lcd.fill_screen(0x001F)            # solid blue background
-    >>> group = lcd.load_sprite("/Meatball_32x30_16color.bmp", 32, 30)
-    >>> lcd.display.root_group = group
+    >>> group, palette = lcd.make_group(0xFF0000)
+    >>> while True:
+    ...     pass
     """
 
     def __init__(self):
@@ -83,6 +89,9 @@ class LCDDisplay:
 
         # Release any previously claimed display resources
         displayio.release_displays()
+
+        # Track sprite velocities for bounce_sprite()
+        self._sprite_velocities = {}
 
         spi    = board.LCD_SPI()
         tft_cs = board.LCD_CS
@@ -132,8 +141,15 @@ class LCDDisplay:
 
         Example
         -------
-        >>> group, palette = lcd.make_group(0x000000)
+        >>> import pykit_explorer
+        >>> from lcd_display import LCDDisplay
+        >>> lcd = LCDDisplay()
+        >>> lcd.backlight_on()
+        >>> group, palette = lcd.make_group(0x000000)  # black background
+        >>> label = lcd.add_label(group, "Hello", 120, 60, color=0xFFFFFF)
         >>> palette[0] = 0x000080   # swap to dark blue later
+        >>> while True:
+        ...     pass
         """
         bitmap  = displayio.Bitmap(WIDTH, HEIGHT, 1)
         palette = displayio.Palette(1)
@@ -167,10 +183,16 @@ class LCDDisplay:
 
         Example
         -------
-        >>> group, palette = lcd.make_group()
+        >>> import pykit_explorer
+        >>> from lcd_display import LCDDisplay
+        >>> lcd = LCDDisplay()
+        >>> lcd.backlight_on()
+        >>> group, palette = lcd.make_group(0x000000)
         >>> temp_lbl = lcd.add_label(group, "--.- C", 120, 42,
         ...                          color=0x00FF00, scale=3)
         >>> temp_lbl.text = "37.2 C"   # update in main loop
+        >>> while True:
+        ...     time.sleep(1)
         """
         lbl = _label.Label(
             terminalio.FONT,
@@ -182,6 +204,85 @@ class LCDDisplay:
         )
         group.append(lbl)
         return lbl
+
+    # -- Shapes ------------------------------------------------------------------
+
+    def draw_rect(self, x: int, y: int, width: int, height: int,
+                  fill: int = None, outline: int = None, stroke: int = 1) -> Rect:
+        """Create a rectangle shape.
+
+        Parameters
+        ----------
+        x, y      : top-left corner position
+        width     : rectangle width in pixels
+        height    : rectangle height in pixels
+        fill      : 24-bit RGB fill colour (None for transparent)
+        outline   : 24-bit RGB outline colour (None for no outline)
+        stroke    : outline thickness in pixels
+
+        Returns
+        -------
+        Rect (displayio.TileGrid subclass — append to a group to display)
+        """
+        return Rect(x, y, width, height, fill=fill, outline=outline, stroke=stroke)
+
+    def draw_circle(self, x: int, y: int, r: int,
+                    fill: int = None, outline: int = None, stroke: int = 1) -> Circle:
+        """Create a circle shape.
+
+        Parameters
+        ----------
+        x, y      : center position
+        r         : radius in pixels
+        fill      : 24-bit RGB fill colour (None for transparent)
+        outline   : 24-bit RGB outline colour (None for no outline)
+        stroke    : outline thickness in pixels
+
+        Returns
+        -------
+        Circle (displayio shape — append to a group to display)
+
+        Example
+        -------
+        >>> import pykit_explorer
+        >>> from lcd_display import LCDDisplay
+        >>> lcd = LCDDisplay()
+        >>> lcd.backlight_on()
+        >>> group, palette = lcd.make_group(0x000000)
+        >>> circle = lcd.draw_circle(120, 67, 30, fill=0x00FF00, outline=0x000000)
+        >>> group.append(circle)
+        >>> while True:
+        ...     pass
+        """
+        return Circle(x, y, r, fill=fill, outline=outline, stroke=stroke)
+
+    def draw_line(self, x0: int, y0: int, x1: int, y1: int,
+                  color: int = 0xFFFFFF) -> Line:
+        """Create a line shape.
+
+        Parameters
+        ----------
+        x0, y0    : start point
+        x1, y1    : end point
+        color     : 24-bit RGB line colour
+
+        Returns
+        -------
+        Line (displayio shape — append to a group to display)
+
+        Example
+        -------
+        >>> import pykit_explorer
+        >>> from lcd_display import LCDDisplay
+        >>> lcd = LCDDisplay()
+        >>> lcd.backlight_on()
+        >>> group, palette = lcd.make_group(0x000000)
+        >>> line = lcd.draw_line(0, 0, 240, 135, color=0xFF00FF)
+        >>> group.append(line)
+        >>> while True:
+        ...     pass
+        """
+        return Line(x0, y0, x1, y1, color)
 
     # -- Text scrolling ------------------------------------------------------
 
@@ -276,11 +377,16 @@ class LCDDisplay:
 
         Example
         -------
+        >>> import pykit_explorer
+        >>> from lcd_display import LCDDisplay
+        >>> lcd = LCDDisplay()
+        >>> lcd.backlight_on()
+        >>> group, palette = lcd.make_group(0x000000)
         >>> ble_lbl = lcd.make_scroll_label(group, 120, 55)
-        >>> ble_lbl.set("Hello world!")
+        >>> ble_lbl.set("Hello CircuitPython PyKit Explorer!")
         >>> while True:
         ...     if not ble_lbl.update(time.monotonic()):
-        ...         pass  # message expired, show something else
+        ...pass  # message expired, show something else
         """
         return ScrollLabel(group, x, y, color=color, scale=scale,
                            scroll_width=scroll_width,
@@ -294,7 +400,7 @@ class LCDDisplay:
 
         Parameters
         ----------
-        color_565 : 16-bit colour, e.g. 0xF800 = red, 0x001F = blue
+        color_565 : 16-bit colour, e.g. 0xF800 = red, 0x00001F = blue
 
         Returns the root Group that was applied — you can append more elements.
         """
@@ -361,35 +467,42 @@ class LCDDisplay:
         ----------
         group            : the displayio.Group to move
         sprite_w, sprite_h : sprite dimensions (for boundary checking)
-        dx, dy           : initial pixel velocity (stored on group after first call)
+        dx, dy           : initial pixel velocity
         delay            : optional sleep per call (set 0 for time-managed loops)
 
         Example
         -------
-        >>> group = lcd.load_sprite("/logo.bmp", 32, 30, x=100, y=50)
+        >>> import pykit_explorer
+        >>> from lcd_display import LCDDisplay
+        >>> lcd = LCDDisplay()
+        >>> lcd.backlight_on()
+        >>> group = lcd.load_sprite("Images/Meatball_32x30_16color.bmp", 32, 30, x=100, y=50)
         >>> lcd.display.root_group = group
         >>> while True:
         ...     lcd.bounce_sprite(group, 32, 30)
         """
-        if not hasattr(group, "_vx"):
-            group._vx = dx
-            group._vy = dy
+        gid = id(group)
+        if gid not in self._sprite_velocities:
+            self._sprite_velocities[gid] = [dx, dy]
 
-        group.x += group._vx
-        group.y += group._vy
+        vx, vy = self._sprite_velocities[gid]
+        group.x += vx
+        group.y += vy
 
         if group.x >= WIDTH - sprite_w:
             group.x = WIDTH - sprite_w
-            group._vx = -abs(group._vx)
+            vx = -abs(vx)
         if group.x <= 0:
             group.x = 0
-            group._vx = abs(group._vx)
+            vx = abs(vx)
         if group.y >= HEIGHT - sprite_h:
             group.y = HEIGHT - sprite_h
-            group._vy = -abs(group._vy)
+            vy = -abs(vy)
         if group.y <= 0:
             group.y = 0
-            group._vy = abs(group._vy)
+            vy = abs(vy)
+
+        self._sprite_velocities[gid] = [vx, vy]
 
         if delay:
             time.sleep(delay)
@@ -432,15 +545,23 @@ class ScrollLabel:
 
     Example
     -------
+    >>> import pykit_explorer
+    >>> from lcd_display import LCDDisplay
+    >>> lcd = LCDDisplay()
+    >>> lcd.backlight_on()
+    >>> group, palette = lcd.make_group(0x000000)
     >>> ble_lbl = lcd.make_scroll_label(group, 120, 55)
-    >>> ble_lbl.set("A short message")
-    >>> ble_lbl.set("A much longer message that needs to scroll across the screen")
+
+    >>> messages = ["A short message", "A much longer message that needs to scroll across the screen"]
+    >>> msg_index = 0
+    >>> ble_lbl.set(messages[msg_index])
+
     >>> while True:
     ...     now = time.monotonic()
-    ...     if ble_lbl.update(now):
-    ...         temp_lbl.hidden = True
-    ...     else:
-    ...         temp_lbl.hidden = False
+    ...     if not ble_lbl.update(now):
+    ...         msg_index = (msg_index + 1) % len(messages)
+    ...         ble_lbl.set(messages[msg_index])
+
     """
 
     def __init__(self, group, x, y, color=Colors.YELLOW, scale=2,

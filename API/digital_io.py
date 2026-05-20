@@ -93,8 +93,7 @@ class DigitalInput:
     Example
     -------
     >>> from digital_io import DigitalInput
-    >>> import digitalio
-    >>> btn = DigitalInput(board.D3, pull=digitalio.Pull.UP)
+    >>> btn = DigitalInput(board.D3)
     >>> print(btn.value)         # True = not pressed (active-low)
     >>> print(btn.is_pressed())  # True when button pulled LOW
     """

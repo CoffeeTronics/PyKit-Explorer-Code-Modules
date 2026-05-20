@@ -27,10 +27,15 @@ class I2CBus:
 
     Example
     -------
+    >>> import pykit_explorer
     >>> from i2c_bus import I2CBus
-    >>> bus = I2CBus()
-    >>> bus.scan()                       # prints all found addresses
-    >>> data = bus.read_register(0x48, 0x00, 2)
+    >>> from imu_sensor import IMUSensor    
+    >>> i2c_bus = I2CBus()
+    >>> address = i2c_bus.scan() 
+    >>> for a in address:
+    ...     print(hex(a))  # prints all found addresses 
+    >>> while True:
+    ...     pass
     """
 
     def __init__(self, scl=board.SCL, sda=board.SDA):
