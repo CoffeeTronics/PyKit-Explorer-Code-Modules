@@ -47,20 +47,36 @@ class SDCard:
 
     Example
     -------
+    >>> import pykit_explorer 
     >>> from sd_card import SDCard
     >>> sd = SDCard()
     >>> sd.write_text("log.txt", "Hello SD!\\n")
     >>> print(sd.read_text("log.txt"))
     >>> sd.append_text("log.txt", "Another line\\n")
+    >>> print(sd.read_text("log.txt")
+    >>> while True:
+    ...     pass
     """
 
     def __init__(self, mount_point: str = "/sd"):
         self._mount = mount_point
         spi = busio.SPI(board.SD_SCK, board.SD_MOSI, board.SD_MISO)
         cs  = digitalio.DigitalInOut(board.SD_CS)
-        sdcard = adafruit_sdcard.SDCard(spi, cs)
-        vfs = storage.VfsFat(sdcard)
-        storage.mount(vfs, mount_point)
+        try:
+            sdcard = adafruit_sdcard.SDCard(spi, cs)
+            vfs = storage.VfsFat(sdcard)
+            storage.mount(vfs, mount_point)
+        except OSError as e:
+            if e.args[0] == 5:
+                raise OSError(
+                    "SD card error (Errno 5): Could not mount the SD card.\n"
+                    "Please check:\n"
+                    "  1. SD card is inserted correctly\n"
+                    "  2. Card is 32GB or smaller (SDHC)\n"
+                    "  3. Card is formatted as FAT32 with no partition table\n"
+                    "     (Linux: sudo mkfs.vfat -F 32 -I /dev/sdX)"
+                ) from None
+            raise
 
     def _path(self, filename: str) -> str:
         """Join the mount point and filename."""
