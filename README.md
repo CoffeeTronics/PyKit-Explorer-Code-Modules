@@ -107,11 +107,11 @@ Both breakout modules require an `I2CBus` instance from `i2c_bus.py`. Pass its
 Ready-to-run programs that combine multiple modules. Each exposes a single
 `run()` entry point.
 
-| Tool                      | What it does                                                                                                                                                                            |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pwm_waveform_explorer` | Interactive oscilloscope: D3 steps frequency (100–3 kHz), A5 steps duty cycle (0–100 %);`<br>`live waveform on LCD, sine tone through speaker, LED brightness tracks duty cycle   |
+| Tool                         | What it does                                                                                                                                                                                                    |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pwm_waveform_explorer`    | Interactive oscilloscope: D3 steps frequency (100–3 kHz), A5 steps duty cycle (0–100 %);`<br>`live waveform on LCD, sine tone through speaker, LED brightness tracks duty cycle                           |
 | `analog_waveform_explorer` | Triggered oscilloscope: short press D3 steps timebase (10 ms/px → 200 µs/px), long press cycles channels A0–A5; displays Vpp, frequency, and period; per-channel colour coding; max useful signal ~400 Hz |
-| `synthio_sound_lab`     | Theremin synthesiser: IMU tilt y → pitch, tilt x → volume (3° dead zone), APDS proximity → pitch bend up;`<br>`D3 cycles waveform (SINE/SQUA/SAW/TRI); optional USB MIDI output |
+| `synthio_sound_lab`        | Theremin synthesiser: IMU tilt y → pitch, tilt x → volume (3° dead zone), APDS proximity → pitch bend up;`<br>`D3 cycles waveform (SINE/SQUA/SAW/TRI); optional USB MIDI output                         |
 
 ---
 
@@ -649,7 +649,92 @@ imu.poke(0x06, 0x01)     # Write PWR_MGMT_1 to wake the IMU from sleep
 imu.deinit()
 ```
 
-**SPI example — generic sensor on board.CS:**
+**SPI example — 25AA040A EEPROM read/write using `SPIBus`:**
+
+The 25AA040A is a 512-byte serial EEPROM. Use the `SPIBus` module from `/API` for clean,
+automatic CS management and multi-byte transactions.
+
+**Wiring — 25AA040A to PyKit Explorer:**
+
+| 25AA040A Pin | Description  | PyKit Pin |
+| ------------ | ------------ | --------- |
+| 1            | CS           | D9        |
+| 2            | SO (MISO)    | D8        |
+| 3            | GND          | 3V3       |
+| 4            | VSS (ground) | GND       |
+| 5            | SI (MOSI)    | D10       |
+| 6            | SCK          | D11       |
+| 7            | HOLD         | 3V3       |
+| 8            | VCC          | 3V3       |
+
+> **Note:** Pull up unused control pins (HOLD on pin 7) to VCC (3V3).
+> For a breadboard-friendly setup, place a 10 kΩ resistor between HOLD and VCC, or simply tie it directly to VCC if no hold control is needed.
+
+```python
+import pykit_explorer
+import time
+
+from spi_bus import SPIBus
+
+# Initialize SPI bus (1 MHz, uses board.CS by default)
+spi = SPIBus(baudrate=1_000_000)
+
+def read_status():
+    """Read EEPROM status register"""
+    response = spi.write_then_read(bytes([0x05]), 1)
+    return response[0]
+
+def write_enable():
+    """Send WREN instruction before write operations"""
+    spi.write(bytes([0x06]))
+
+def write_byte(addr, data):
+    """Write single byte to EEPROM address"""
+    write_enable()
+    time.sleep(0.001)
+    spi.write(bytes([0x02, addr, data]))
+    time.sleep(0.005)  # Wait for write to complete
+
+def read_byte(addr):
+    """Read single byte from EEPROM address"""
+    response = spi.write_then_read(bytes([0x03, addr]), 1)
+    return response[0]
+
+# Test: write pattern to addresses 0x00–0x03
+print("Writing pattern [0x55, 0xAA, 0x33, 0xCC]...")
+pattern = [0x55, 0xAA, 0x33, 0xCC]
+for addr, val in enumerate(pattern):
+    write_byte(addr, val)
+
+# Read back and verify
+print("Reading back...")
+for addr, expected in enumerate(pattern):
+    read_val = read_byte(addr)
+    status = "✓" if read_val == expected else "✗"
+    print(f"{status} Address 0x{addr:02X}: 0x{read_val:02X} (expected 0x{expected:02X})")
+
+spi.deinit()
+```
+
+**SPI EEPROM command reference (25AA040A protocol):**
+
+| Command | Code | Format             | Purpose                        |
+| ------- | ---- | ------------------ | ------------------------------ |
+| READ    | 0x03 | 0x03 [addr]        | Read byte at address           |
+| WRITE   | 0x02 | 0x02 [addr] [data] | Write byte at address          |
+| RDSR    | 0x05 | 0x05               | Read status register (WIP bit) |
+| WREN    | 0x06 | 0x06               | Write Enable before any write  |
+| WRDI    | 0x04 | 0x04               | Write Disable (clear WIP)      |
+
+**Implementation notes:**
+
+- **SPIBus class:** Provides automatic CS management and configurable baudrate/polarity/phase.
+- **write_then_read():** Combines command send and response read in a single CS-low transaction — ideal for EEPROM operations.
+- **Write sequence:** Always call `write_enable()` (WREN, 0x06) before any write operation.
+- **Timing:** Wait ≥5 ms after write operations for the EEPROM to complete the internal write cycle.
+- **Multi-byte writes:** For sequential writes, extend the WRITE command to include consecutive address+data pairs without re-enabling.
+  
+  **SPI example — generic sensor on board.CS:**
 
 ```python
 import pykit_explorer
@@ -750,10 +835,10 @@ you are watching: A0=cyan, A1=green, A2=yellow, A3=orange, A4=red, A5=purple.
 
 **Controls**
 
-| Input                    | Action                                       |
-| ------------------------ | -------------------------------------------- |
+| Input                    | Action                                                                  |
+| ------------------------ | ----------------------------------------------------------------------- |
 | Short press D3 (< 0.8 s) | Step timebase: 10ms/px → 5ms → 2ms → 1ms → 500µs → 200µs (wraps) |
-| Long press D3 (≥ 0.8 s)  | Next channel: A0→A1→A2→A3→A4→A5 (wraps)     |
+| Long press D3 (≥ 0.8 s) | Next channel: A0→A1→A2→A3→A4→A5 (wraps)                            |
 
 **Timebase guide — choosing the right scale**
 
@@ -762,14 +847,14 @@ If the waveform looks like a flat line, the signal is too slow — use a slower
 (higher ms/px) scale. If it looks like a solid block of colour, the signal is
 too fast — use a faster (lower ms/px) scale.
 
-| Scale     | Window    | Good for         |
-| --------- | --------- | ---------------- |
-| 10 ms/px  | 2.32 s    | 0.4–10 Hz        |
-|  5 ms/px  | 1.16 s    | 1–20 Hz          |
-|  2 ms/px  |  464 ms   | 4–50 Hz          |
-|  1 ms/px  |  232 ms   | 10–100 Hz        |
-| 500 µs/px |  116 ms   | 50–165 Hz        |
-| 200 µs/px |   46 ms   | 100–400 Hz       |
+| Scale      | Window | Good for    |
+| ---------- | ------ | ----------- |
+| 10 ms/px   | 2.32 s | 0.4–10 Hz  |
+| 5 ms/px    | 1.16 s | 1–20 Hz    |
+| 2 ms/px    | 464 ms | 4–50 Hz    |
+| 1 ms/px    | 232 ms | 10–100 Hz  |
+| 500 µs/px | 116 ms | 50–165 Hz  |
+| 200 µs/px | 46 ms  | 100–400 Hz |
 
 > **Maximum frequency:** ~400 Hz. Above this the sample rate (≈ 4 kHz) no
 > longer provides enough points per cycle for a recognisable waveform.
