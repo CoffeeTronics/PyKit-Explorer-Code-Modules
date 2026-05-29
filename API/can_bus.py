@@ -36,22 +36,22 @@ class CANBus:
     baudrate    : CAN bus speed in bps (default 250_000)
     auto_restart: automatically restart after bus-off condition
 
-    Example — Transmitter
+    Example - Transmitter - Send CAN frames and packed counters
     ----------------------
-    >>> from can_bus import CANBus
-    >>> can = CANBus()
-    >>> can.send(0x408, b"hello!")
-    >>> can.send_packed(0x408, count=1, timestamp_ms=1000)
+from can_bus import CANBus
+can = CANBus()
+can.send(0x408, b"hello!")
+can.send_packed(0x408, count=1, timestamp_ms=1000)
 
-    Example — Receiver
+    Example - Receiver - Listen for and print CAN messages
     ------------------
-    >>> from can_bus import CANBus
-    >>> can = CANBus()
-    >>> with can.listener(match_id=0x408) as listener:
-    ...     while True:
-    ...         msg = listener.receive()
-    ...         if msg:
-    ...             print("ID:", hex(msg.id), "Data:", msg.data)
+from can_bus import CANBus
+can = CANBus()
+with can.listener(match_id=0x408) as listener:
+    while True:
+        msg = listener.receive()
+        if msg:
+            print("ID:", hex(msg.id), "Data:", msg.data)
     """
 
     def __init__(self, baudrate: int = 250_000, auto_restart: bool = True):
@@ -123,8 +123,8 @@ class CANBus:
 
         Usage
         -----
-        >>> with can.listener(match_id=0x408) as listener:
-        ...     msg = listener.receive()   # returns None on timeout
+with can.listener(match_id=0x408) as listener:
+    msg = listener.receive()   # returns None on timeout
         """
         if match_id is not None:
             matches = [canio.Match(match_id)]

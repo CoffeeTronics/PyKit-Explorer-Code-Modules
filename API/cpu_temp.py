@@ -20,12 +20,14 @@ import time
 class CPUTemperature:
     """Read the on-chip CPU temperature.
 
-    Example
+    Example - Read and print CPU temperature
     -------
-    >>> from cpu_temp import CPUTemperature
-    >>> temp = CPUTemperature()
-    >>> print(temp.celsius)
-    >>> print(temp.fahrenheit)
+import pykit_explorer
+from cpu_temp import CPUTemperature
+temp = CPUTemperature()
+print(f"Temp: {temp.celsius}°C")
+print(f"Temp: {temp.fahrenheit}°F")
+
     """
 
     @property

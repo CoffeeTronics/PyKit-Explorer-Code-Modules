@@ -30,25 +30,19 @@ class PWMOutput:
     frequency    : PWM frequency in Hz (default 5 000 Hz — good for LEDs)
     duty_cycle   : initial duty cycle 0–65535 (default 0 = off)
 
-    Example
+    Example - Fade an LED in and out - use a oscilloscope, logic analyzer, or multimeter in duty cycle mode to see the effect
     -------
-    >>> import pykit_explorer
-    >>> from pwm_out import PWMOutput
-    >>> try:
-    ...     pwm = PWMOutput(board.D5)
-    ...     print("PWM initialized on pin D5")
-    ... except Exception as e:
-    ...     print("Error initializing PWMOutput:", e)
-    ...     pwm.deinit()
-    ... except Exception as e:
-    ...     print("Error initializing PWMOutput:", e)
-    ...     pwm.deinit()
-    ... pwm.duty_percent = 50
-    ... while True:    pass
+import pykit_explorer
+from pwm_out import PWMOutput
+pwm = PWMOutput(board.D5, frequency=1000)
+pwm.duty_percent = 50      # 50% duty cycle
+while True:
+    pwm.fade_in(duration=1.0)  # fade in over 1 second
+    pwm.fade_out(duration=1.0) # fade out over 1 second
+
     """
 
     def __init__(self, pin=board.D5, frequency: int = 5000, duty_cycle: int = 0):
-        """Initialize PWM output. Frequency cannot be changed after creation."""
         self._pwm = pwmio.PWMOut(pin, frequency=frequency, duty_cycle=duty_cycle)
 
     # -- Duty cycle ----------------------------------------------------------
@@ -76,8 +70,11 @@ class PWMOutput:
 
     @property
     def frequency(self) -> int:
-        """PWM frequency in Hz (read-only; set during initialization)."""
         return self._pwm.frequency
+
+    @frequency.setter
+    def frequency(self, hz: int):
+        self._pwm.frequency = hz
 
     # -- Convenience helpers -------------------------------------------------
 

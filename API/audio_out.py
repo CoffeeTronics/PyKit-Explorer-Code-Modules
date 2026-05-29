@@ -54,18 +54,38 @@ class AudioOutput:
     ----------
     pin         : audio output pin (default board.DAC)
 
-    Example — tone
+    Example - Play happy birthday using generated tones
     --------------
-    >>> from audio_out import AudioOutput
-    >>> audio = AudioOutput()
-    >>> audio.play_tone(440, duration=1.0)     # 440 Hz for 1 second
-    >>> audio.play_tone(880)                   # start 880 Hz, non-blocking
-    >>> audio.stop()
+import pykit_explorer
+from audio_out import AudioOutput
+audio = AudioOutput()
+# Happy Birthday note timings (frequency, duration in seconds)
+line1 = [(524, 0.15), (524, 0.15), (588, 0.3), (524, 0.3), (698, 0.3), (660, 0.6)]
+line2 = [(524, 0.15), (524, 0.15), (588, 0.3), (524, 0.3), (784, 0.3), (698, 0.6)]
+line3 = [(524, 0.3), (524, 0.3), (1046, 0.3), (880, 0.3), (698, 0.3), (660, 0.3), (588, 0.6)]
+line4 = [(932, 0.15), (932, 0.15), (880, 0.3), (698, 0.3), (784, 0.3), (698, 0.6)]
+happy_birthday = line1 + line2 + line3 + line4
+# Generate and play each note on-demand
+for frequency, duration in happy_birthday:
+    sample = audio._make_sine(frequency, volume=0.1)
+    audio._audio.play(sample, loop=True)
+    time.sleep(duration)
+audio.stop()
 
-    Example — WAV
+
+    Example - Play WAV files
     -------------
-    >>> audio.play_wav("AudioFiles/chime.wav")
-    >>> audio.play_wav("AudioFiles/alert.wav", loop=False)
+import pykit_explorer
+from audio_out import AudioOutput
+audio = AudioOutput()
+audio.play_wav("AudioFiles/210.wav")
+time.sleep(0.5)
+audio.play_wav("AudioFiles/304.wav")
+time.sleep(0.5)
+audio.play_wav("AudioFiles/320.wav")
+time.sleep(0.5)
+audio.play_wav("AudioFiles/140.wav")
+
     """
 
     def __init__(self, pin=board.DAC):
@@ -82,7 +102,7 @@ class AudioOutput:
         Uses GCD(sample_rate, frequency) to find the shortest buffer that holds
         a whole number of complete cycles, so the loop point is always exact.
 
-        Example — 3000 Hz at 8000 Hz sample rate:
+        Example - 3000 Hz at 8000 Hz sample rate:
             gcd(8000, 3000) = 1000  →  3 cycles in 8 samples  →  3000 Hz ✓
             (the naive 8000 // 3000 = 2 samples produces two equal DC values
             because sin(0) ≈ sin(π) ≈ 0, so the speaker never moves)

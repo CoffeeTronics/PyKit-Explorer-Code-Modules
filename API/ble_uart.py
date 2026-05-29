@@ -51,17 +51,19 @@ class BLEUart:
     ----------
     baudrate : UART baud rate (default 115200, matching RNBD451 default)
 
-    Example
+    Example - Poll BLE UART and send messages
     -------
-    >>> from ble_uart import BLEUart
-    >>> ble = BLEUart()
-    >>> while True:
-    ...     msg = ble.poll()
-    ...     if ble.connected:
-    ...         ble.send("Hello BLE!\\n")
-    ...     if msg:
-    ...         print("Got:", msg)
-    ...     time.sleep(1)
+import pykit_explorer
+from ble_uart import BLEUart
+ble = BLEUart()
+while True:
+    msg = ble.poll()
+    if ble.connected:
+        ble.send("Hello BLE!\n")
+    if msg:
+        print("Got:", msg)
+    time.sleep(1)
+    
     """
 
     def __init__(self, baudrate: int = 115200):

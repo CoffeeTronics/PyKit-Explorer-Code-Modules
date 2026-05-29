@@ -46,10 +46,12 @@ Notes
   very few samples at higher frequencies (8 000 Hz sample rate cap).
   The LCD waveform and LED remain accurate at all frequencies.
 
-Usage
+Example Usage
 -----
-  from pwm_waveform_explorer import run
-  run()
+import pykit_explorer
+from pwm_waveform_explorer import run
+run()
+
 """
 
 import board

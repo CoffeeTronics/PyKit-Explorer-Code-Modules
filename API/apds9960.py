@@ -26,13 +26,13 @@ Usage
 -----
   Pass the .bus property from an i2c_bus.I2CBus instance:
 
-  >>> import pykit_explorer
-  >>> from i2c_bus import I2CBus
-  >>> from apds9960 import APDS9960Sensor
-  >>> my_i2c = I2CBus()
-  >>> sensor = APDS9960Sensor(my_i2c.bus)
-  >>> sensor.enable_proximity()
-  >>> print(sensor.proximity)
+import pykit_explorer
+from i2c_bus import I2CBus
+from apds9960 import APDS9960Sensor
+my_i2c = I2CBus()
+sensor = APDS9960Sensor(my_i2c.bus)
+sensor.enable_proximity()
+print(sensor.proximity)
 
 Use this module for:
   - Touchless gesture controls (swipe to change state)
@@ -69,42 +69,49 @@ class APDS9960Sensor:
     ----------
     i2c : raw busio.I2C object — pass i2c_bus_instance.bus
 
-    Example — proximity
-    -------------------
-    >>> import pykit_explorer
-    >>> from i2c_bus import I2CBus
-    >>> from apds9960 import APDS9960Sensor
-    >>> my_i2c = I2CBus()
-    >>> sensor = APDS9960Sensor(my_i2c.bus)
-    >>> sensor.enable_proximity()
-    >>> while True:
-    ...     print(sensor.proximity)
-    ...     time.sleep(0.5)
+Example - proximity - Print proximity readings continuously
+-------------------
+import pykit_explorer
+from i2c_bus import I2CBus
+from apds9960 import APDS9960Sensor
+my_i2c = I2CBus()
+sensor = APDS9960Sensor(my_i2c.bus)
+sensor.enable_proximity()
+while True:
+    print(sensor.proximity)
+    time.sleep(0.1)
 
+    
+Example - gesture - Detect and print swipe gestures
+-----------------
+import pykit_explorer
+from i2c_bus import I2CBus
+from apds9960 import APDS9960Sensor
+my_i2c = I2CBus()
+sensor = APDS9960Sensor(my_i2c.bus)
+sensor.enable_gesture()
+while True:
+    g = sensor.gesture()
+    if g:
+        print(sensor.gesture_name(g))
 
-    Example — gesture
-    -----------------
-    >>> from i2c_bus import I2CBus
-    >>> from apds9960 import APDS9960Sensor
-    >>> my_i2c = I2CBus()
-    >>> sensor = APDS9960Sensor(my_i2c.bus)
-    >>> sensor.enable_gesture()
-    >>> while True:
-    ...     g = sensor.gesture()
-    ...     if g:
-    ...         print(sensor.gesture_name(g))
-
-    Example — color
-    ---------------
-    >>> import pykit_explorer
-    >>> from i2c_bus import I2CBus
-    >>> from apds9960 import APDS9960Sensor
-    >>> my_i2c = I2CBus()
-    >>> sensor = APDS9960Sensor(my_i2c.bus)
-    >>> sensor.enable_color()
-    >>> while True:
-    ...     r, g, b, c = sensor.color
-    ...     print(f"RED:{r}  GREEN:{g}  BLUE:{b}  CLEAR:{c}")
+Example - color - Read RGBC values and mirror color to NeoPixels
+---------------
+import pykit_explorer
+from neopixels import NeoPixels
+from i2c_bus import I2CBus
+from apds9960 import APDS9960Sensor
+my_i2c = I2CBus()
+sensor = APDS9960Sensor(my_i2c.bus)
+sensor.enable_color()
+px = NeoPixels()
+while True:
+    r, g, b, c = sensor.color
+    print(f"R={r} G={g} B={b} C={c}")
+    neopixel_color = sensor.color_as_neopixel()
+    px.fill(neopixel_color)
+    time.sleep(0.5)
+    
     """
 
     def __init__(self, i2c):

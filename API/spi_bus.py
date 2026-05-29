@@ -36,12 +36,14 @@ class SPIBus:
     polarity  : clock idle state (default 0)
     phase     : clock sampling edge (default 0)
 
-    Example
+    Example - Send a command and read a response in one transaction
     -------
-    >>> from spi_bus import SPIBus
-    >>> spi = SPIBus()
-    >>> data = spi.transfer(bytes([0x9F, 0x00, 0x00, 0x00]))
-    >>> print("Response:", [hex(b) for b in data])
+import pykit_explorer
+from spi_bus import SPIBus
+spi = SPIBus()
+data = spi.transfer(bytes([0x9F, 0x00, 0x00, 0x00]))
+print("Response:", [hex(b) for b in data])
+
     """
 
     def __init__(self, cs_pin=board.CS, baudrate: int = 1_000_000,

@@ -25,27 +25,27 @@ class AsyncRunner:
 
     Example — Blink five NeoPixels at different rates
     --------------------------------------------------
-    >>> import board, time, random
-    >>> import neopixel
-    >>> from async_tasks import AsyncRunner
-    >>>
-    >>> pixels = neopixel.NeoPixel(board.NEOPIXEL, 5, brightness=0.05, auto_write=True)
-    >>> OFF = (0, 0, 0)
-    >>>
-    >>> async def blink(pixel, interval, count, color):
-    ...     for _ in range(count):
-    ...         pixels[pixel] = color
-    ...         await AsyncRunner.sleep(interval)
-    ...         pixels[pixel] = OFF
-    ...         await AsyncRunner.sleep(interval)
-    >>>
-    >>> runner = AsyncRunner()
-    >>> runner.add(blink(0, 0.30, 15, (random.randrange(255), random.randrange(255), random.randrange(255))))
-    >>> runner.add(blink(1, 0.75, 10, (0, 255, 0)))
-    >>> runner.add(blink(2, 1.00, 10, (255, 0, 0)))
-    >>> runner.add(blink(3, 0.50, 10, (255, 150, 0)))
-    >>> runner.add(blink(4, 0.25, 15, (0, 0, 255)))
-    >>> runner.run()
+import pykit_explorer
+import random
+from neopixels import NeoPixels, OFF
+from async_tasks import AsyncRunner
+pixels = NeoPixels()
+
+async def blink(pixel, interval, count, color):
+    for _ in range(count):
+        pixels.set(pixel,color, True)
+        await AsyncRunner.sleep(interval)
+        pixels.set(pixel, OFF)
+        await AsyncRunner.sleep(interval)
+
+runner = AsyncRunner()
+runner.add(blink(0, 0.30, 15, (random.randrange(255), random.randrange(255), random.randrange(255))))
+runner.add(blink(1, 0.75, 10, (0, 255, 0)))
+runner.add(blink(2, 1.00, 10, (255, 0, 0)))
+runner.add(blink(3, 0.50, 10, (255, 150, 0)))
+runner.add(blink(4, 0.25, 15, (0, 0, 255)))
+runner.run()
+
     """
 
     def __init__(self):

@@ -35,12 +35,19 @@ class IMUSensor:
 
     Example
     -------
-    >>> from imu_sensor import IMUSensor
-    >>> imu = IMUSensor()
-    >>> ax, ay, az = imu.acceleration
-    >>> gx, gy, gz = imu.gyro
-    >>> mx, my, mz = imu.magnetic
-    >>> print(imu.tilt_angle_x, imu.tilt_angle_y)
+import pykit_explorer
+from imu_sensor import IMUSensor
+imu = IMUSensor()
+while True:
+    ax, ay, az = imu.acceleration
+    gx, gy, gz = imu.gyro
+    mx, my, mz = imu.magnetic
+    print(f"Tilt angles of X axis and Y axis: {imu.tilt_angle_x:.2f}°, {imu.tilt_angle_y:.2f}°")
+    print(f"Acceleration (m/s²): ax={ax:.2f}, ay={ay:.2f}, az={az:.2f}")
+    print(f"Gyro (rad/s): gx={gx:.2f}, gy={gy:.2f}, gz={gz:.2f}")
+    print(f"Magnetic (µT): mx={mx:.2f}, my={my:.2f}, mz={mz:.2f}\n\n")
+    time.sleep(0.1)
+
     """
 
     # Tilt thresholds for gesture detection (m/s²)

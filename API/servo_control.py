@@ -35,20 +35,16 @@ class ServoController:
     min_pulse    : minimum pulse width in µs (default 750 — adjust for your servo)
     max_pulse    : maximum pulse width in µs (default 2250 — adjust for your servo)
 
-    Important Note: Servos use PWM pins as their signal pin. The constructor defaults to pin
-    pin D7, which is PWM-capable on the Dev Board. If you want to use a different pin, make sure to
-    check that it supports PWM (see pwm_pins.py) and pass it to the constructor.
     Example
     -------
-    >>> import pykit_explorer
-    >>> from servo_control import ServoController
-    >>> srv = ServoController(board.D7)
-    >>> while True:
-    ...     srv.angle = 90      # centre
-    ...     srv.sweep()         # 0° → 180° → 0°, blocking
+import pykit_explorer
+from servo_control import ServoController
+srv = ServoController(board.A5)
+srv.angle = 90      # centre
+srv.sweep()         # 0° → 180° → 0°, blocking
     """
 
-    def __init__(self, pin=board.D7, min_pulse: int = 750, max_pulse: int = 2250):
+    def __init__(self, pin=board.A5, min_pulse: int = 750, max_pulse: int = 2250):
         self._pwm = pwmio.PWMOut(pin, duty_cycle=2**15, frequency=50)
         self._servo = servo.Servo(self._pwm, min_pulse=min_pulse, max_pulse=max_pulse)
 

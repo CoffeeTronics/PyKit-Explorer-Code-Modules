@@ -20,13 +20,14 @@ Use this module for:
   - Debugging timer conflicts between user code and board-level peripherals
   - Generating a reference list before writing PWM-based drivers
 
-Example to find which pins support PWM on your board:
+Example - Scan and report PWM capabilities
 -------
->>> import pykit_explorer
->>> from pwm_pins import PWMPinScanner
->>> scanner = PWMPinScanner()
->>> scanner.scan()
->>> scanner.report()
+import pykit_explorer
+from pwm_pins import PWMPinScanner
+scanner = PWMPinScanner()
+scanner.scan()
+scanner.report()
+
 """
 
 import board
@@ -44,17 +45,18 @@ class PWMPinScanner:
                      blocked by a system peripheral or timer conflict
     pwm_off        : list of pin name strings with no PWM capability
 
-    Example
+    Example - Scan and report PWM capabilities for each pin
     -------
-    >>> from pwm_pins import PWMPinScanner
-    >>> scanner = PWMPinScanner()
-    >>> scanner.scan()
-    >>> scanner.report()
-    >>>
-    >>> # Access results directly
-    >>> print(scanner.pwm_on)
-    >>> print(scanner.pwm_prevented)
-    >>> print(scanner.pwm_off)
+import pykit_explorer
+from pwm_pins import PWMPinScanner
+scanner = PWMPinScanner()
+scanner.scan()
+scanner.report()
+# Access results directly
+print(f"\nPWM on: {scanner.pwm_on}")
+print(f"\nPWM prevented: {scanner.pwm_prevented}")
+print(f"\nNo PWM: {scanner.pwm_off}")
+
     """
 
     def __init__(self):

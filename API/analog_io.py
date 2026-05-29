@@ -45,13 +45,16 @@ class AnalogInput:
     ----------
     pin : board pin — any of board.A0 … board.A5
 
-    Example
-    -------
-    >>> from analog_io import AnalogInput
-    >>> adc = AnalogInput(board.A0)
-    >>> print(adc.voltage)   # float, 0.0 – 3.3 V
-    >>> print(adc.raw)       # int,   0 – 65535
-    """
+Example - Read ADC values (voltage, raw, percent)
+-------
+import pykit_explorer
+from analog_io import AnalogInput
+adc = AnalogInput(board.A0)
+print(adc.voltage)   # float, 0.0 - 3.3 V
+print(adc.raw)       # int,   0 - 65535
+print(adc.percent)   # float, 0.0 - 100.0 %
+
+"""
 
     def __init__(self, pin=board.A0):
         self._adc = AnalogIn(pin)
@@ -86,13 +89,18 @@ class AnalogOutput:
     ----------
     pin : must be board.DAC — the only analog output capable pin on this board
 
-    Example
-    -------
-    >>> from analog_io import AnalogOutput
-    >>> dac = AnalogOutput()
-    >>> dac.voltage = 1.65   # ~mid-scale
-    >>> dac.raw = 32768      # equivalent
-    """
+Example - Set DAC voltage and perform sweep
+-------
+import pykit_explorer
+from analog_io import AnalogOutput
+dac = AnalogOutput()
+dac.voltage = 1.65   # ~mid-scale
+dac.voltage = 0.0
+dac.raw = 32768      # equivalent
+dac.raw = 0
+dac.sweep()         # sweep from 0 to 3.3 V and back (blocking)
+
+"""
 
     def __init__(self, pin=board.DAC):
         self._dac = AnalogOut(pin)

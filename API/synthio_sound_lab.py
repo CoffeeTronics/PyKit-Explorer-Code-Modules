@@ -43,10 +43,12 @@ MIDI output
   Note-on on A5 touch, note-off on release.
   Note changes while held send note-off / note-on pairs.
 
-Usage
+Example Usage
 -----
-  from synthio_sound_lab import run
-  run()
+import pykit_explorer
+from synthio_sound_lab import run
+run() 
+
 """
 
 import array

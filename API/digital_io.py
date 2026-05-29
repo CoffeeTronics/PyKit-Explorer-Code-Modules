@@ -24,13 +24,19 @@ import time
 class DigitalOutput:
     """Drive a single digital output pin HIGH or LOW.
 
-    Example
+    Example - Drive an LED output, blink and toggle
     -------
-    >>> from digital_io import DigitalOutput
-    >>> led = DigitalOutput(board.LED)
-    >>> led.on()
-    >>> led.off()
-    >>> led.toggle()
+import pykit_explorer
+from digital_io import DigitalOutput
+led = DigitalOutput(board.LED)
+led.on()
+time.sleep(0.5)
+led.off()
+time.sleep(0.5)
+led.toggle()
+time.sleep(0.5)
+led.blink(on_time=0.2, off_time=0.2, count=5)
+
     """
 
     def __init__(self, pin):
@@ -90,13 +96,18 @@ class DigitalInput:
     pin       : board pin (e.g. board.D3, board.A0)
     pull      : digitalio.Pull.UP, digitalio.Pull.DOWN, or None
 
-    Example
+    Example - Read a button state and both the value and if it is pressed
     -------
-    >>> from digital_io import DigitalInput
-    >>> btn = DigitalInput(board.D3)
-    >>> print(btn.value)         # True = not pressed (active-low)
-    >>> print(btn.is_pressed())  # True when button pulled LOW
-    """
+import pykit_explorer
+from digital_io import DigitalInput
+import digitalio
+btn = DigitalInput(board.D3, pull=digitalio.Pull.UP)
+while True:
+    print(btn.value)         # True = not pressed (active-low)
+    print(btn.is_pressed())  # True when button pulled LOW
+    time.sleep(0.1)  # debounce delay
+
+"""
 
     def __init__(self, pin, pull=digitalio.Pull.UP):
         self._pin = digitalio.DigitalInOut(pin)
@@ -133,16 +144,19 @@ class EdgeDetector:
     state every time ``update()`` is called.  Call ``update()`` inside
     your main loop.
 
-    Example
+    Example - Detect rising/falling edges and report events
     -------
-    >>> from digital_io import EdgeDetector
-    >>> btn = EdgeDetector(board.D3)
-    >>> while True:
-    ...     btn.update()
-    ...     if btn.fell:   # button just pressed (active-low)
-    ...         print("Pressed!")
-    ...     if btn.rose:   # button just released
-    ...         print("Released!")
+import pykit_explorer
+from digital_io import EdgeDetector
+btn = EdgeDetector(board.D3)
+while True:
+    btn.update()
+    if btn.fell:   # button just pressed (active-low)
+        print("Pressed!")
+    if btn.rose:   # button just released
+        print("Released!")
+    time.sleep(0.1)  # debounce delay
+    
     """
 
     def __init__(self, pin, pull=digitalio.Pull.UP):

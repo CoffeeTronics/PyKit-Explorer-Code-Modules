@@ -23,12 +23,12 @@ Use this module for:
 
 Example
 -------
->>> import sys
->>> sys.path.insert(0, "/API")
->>> from i2c_scan import I2CScanner
->>> scanner = I2CScanner()
->>> scanner.scan()
->>> scanner.report()
+import pykit_explorer
+from i2c_scan import I2CScanner
+scanner = I2CScanner()
+scanner.scan()
+scanner.report()
+
 """
 
 import board
@@ -103,16 +103,9 @@ class I2CScanner:
                 'who_am_i'  (int or None) — raw WHO_AM_I byte, or None if not read
                 'confirmed' (str or None) — confirmed device name, or None
 
-    Example
-    -------
-    >>> from i2c_scan import I2CScanner
-    >>> scanner = I2CScanner()
-    >>> scanner.scan()
-    >>> scanner.report()
-    >>>
-    >>> # Access results directly
-    >>> for device in scanner.results:
-    ...     print(hex(device['address']), device['confirmed'])
+# Access results directly
+for device in scanner.results:
+    print(hex(device['address']), device['confirmed'])
     """
 
     def __init__(self, scl=board.SCL, sda=board.SDA):

@@ -38,22 +38,23 @@ from adafruit_hid.mouse            import Mouse
 class HIDKeyboard:
     """Type strings and press key combinations over USB HID.
 
-    Example
+    Example - Type strings and press combos over USB HID
     -------
-    >>> import pykit_explorer
-    >>> from hid_input import HIDKeyboard
-    >>> from adafruit_hid.keycode import Keycode
-    >>> from digital_io import DigitalInput
-    >>> from cap_touch import CapTouch
-    >>> kbd = HIDKeyboard()
-    >>> btn = DigitalInput(board.D3)
-    >>> touch = CapTouch(board.A5)
-    >>> while True:
-    ...     touch.update()
-    ...     if btn.is_pressed():
-    ...         kbd.type("Hello, world!\\n")
-    ...     elif touch.just_touched:
-    ...         kbd.press_combo(Keycode.CONTROL, Keycode.ALT, Keycode.DELETE)
+import pykit_explorer
+from hid_input import HIDKeyboard
+from adafruit_hid.keycode import Keycode
+from digital_io import DigitalInput
+from cap_touch import CapTouch
+kbd = HIDKeyboard()
+btn = DigitalInput(board.D3)
+touch = CapTouch(board.A5)
+while True:
+    touch.update()
+    if btn.is_pressed():
+        kbd.type("Hello, world!\\n")
+    elif touch.just_touched:
+        kbd.press_combo(Keycode.CONTROL, Keycode.ALT, Keycode.DELETE)
+
     """
 
     def __init__(self):
@@ -72,10 +73,10 @@ class HIDKeyboard:
         ----------
         *keycodes : one or more Keycode constants
 
-        Example
+        Example - Use press_combo to send key combinations (e.g., Shift+A)
         -------
-        >>> kbd.press_combo(Keycode.SHIFT, Keycode.A)   # types 'A'
-        >>> kbd.press_combo(Keycode.ALT, Keycode.F4)    # Alt-F4
+kbd.press_combo(Keycode.SHIFT, Keycode.A)   # types 'A'
+kbd.press_combo(Keycode.ALT, Keycode.F4)    # Alt-F4
         """
         self._kbd.press(*keycodes)
         self._kbd.release_all()
@@ -99,21 +100,22 @@ class HIDMouse:
     The move() values are relative — positive X moves right, positive Y
     moves down (matching standard screen coordinates).
 
-    Example
+    Example - Move and click the mouse based on inputs
     -------
-    >>> import pykit_explorer 
-    >>> from hid_input import HIDMouse
-    >>> from digital_io import DigitalInput
-    >>> from cap_touch import CapTouch
-    >>> btn = DigitalInput(board.D3)
-    >>> mouse = HIDMouse()
-    >>> touch = CapTouch(board.A5)
-    >>> while True:
-    ...     touch.update()
-    ...     if btn.is_pressed():
-    ...         mouse.move(x=10, y=-5)        # right 10, up 5
-    ...     elif touch.just_touched:    
-    ...         mouse.click_left()
+import pykit_explorer 
+from hid_input import HIDMouse
+from digital_io import DigitalInput
+from cap_touch import CapTouch
+btn = DigitalInput(board.D3)
+mouse = HIDMouse()
+touch = CapTouch(board.A5)
+while True:
+    touch.update()
+    if btn.is_pressed():
+        mouse.move(x=10, y=-5)        # right 10, up 5
+    elif touch.just_touched:    
+        mouse.click_left()
+
     """
 
     def __init__(self):
@@ -166,13 +168,15 @@ class JoystickMouse:
     btn_pin : digital pin for left click     (default board.A2, pull-up)
     deadzone: fraction of full range to treat as centre (default 0.1)
 
-    Example
+    Example - Map two analog axes to mouse movement and click
     -------
-    >>> from hid_input import JoystickMouse
-    >>> joy = JoystickMouse()
-    >>> while True:
-    ...     joy.update()
-    ...     time.sleep(0.01)
+import pykit_explorer
+from hid_input import JoystickMouse
+joy = JoystickMouse()
+while True:
+    joy.update()
+    time.sleep(0.01)
+    
     """
 
     _VREF = 3.3

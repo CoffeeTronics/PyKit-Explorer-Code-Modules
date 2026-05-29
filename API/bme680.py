@@ -23,15 +23,16 @@ Usage
 -----
   Pass the .bus property from an i2c_bus.I2CBus instance:
 
-  >>> from i2c_bus import I2CBus
-  >>> from bme680 import BME680Sensor
-  >>> my_i2c = I2CBus()
-  >>> sensor = BME680Sensor(my_i2c.bus)
-  >>> print(sensor.temperature)
-  >>> print(sensor.humidity)
-  >>> print(sensor.pressure)
-  >>> print(sensor.gas)
-  >>> sensor.print_all()
+import pykit_explorer
+from i2c_bus import I2CBus
+from bme680 import BME680Sensor
+my_i2c = I2CBus()
+sensor = BME680Sensor(my_i2c.bus)
+print(sensor.temperature)
+print(sensor.humidity)
+print(sensor.pressure)
+print(sensor.gas)
+sensor.print_all()
 
 Use this module for:
   - Indoor air quality monitoring
@@ -55,20 +56,22 @@ class BME680Sensor:
                    Used to adjust pressure to sea-level equivalent.
                    Find your elevation at: https://www.whatismyelevation.com
 
-    Example
+    Example - Read temperature, humidity, pressure, and gas
     -------
-    >>> from i2c_bus import I2CBus
-    >>> from bme680 import BME680Sensor
-    >>> my_i2c = I2CBus()
-    >>> sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
-    >>> print(sensor.temperature)
-    >>> print(sensor.pressure)     # sea-level adjusted
-    >>> print(sensor.humidity)
-    >>> print(sensor.gas)
+import pykit_explorer
+from i2c_bus import I2CBus
+from bme680 import BME680Sensor
+my_i2c = I2CBus()
+sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
+print(sensor.temperature)
+print(sensor.pressure)     # sea-level adjusted
+print(sensor.humidity)
+print(sensor.gas)
+
     """
 
     def __init__(self, i2c, elevation_m: float = 0):
-        self._sensor = adafruit_bme680.Adafruit_BME680_I2C(i2c)
+        self._sensor = adafruit_bme680.Adafruit_BME680_I2C(i2c, address=0x77)
         self._elevation = elevation_m
 
     # -- Raw sensor readings -------------------------------------------------

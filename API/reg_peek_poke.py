@@ -27,23 +27,23 @@ Use this module for:
 
 Example — I2C (ICM-20948 IMU at 0x69)
 ---------------------------------------
->>> import sys
->>> sys.path.insert(0, "/API")
->>> from reg_peek_poke import I2CDevice
->>> imu = I2CDevice(0x69)
->>> imu.peek(0x00)           # WHO_AM_I — should return 0xEA
->>> imu.dump(0x00, 0x06)     # Dump first 7 registers
->>> imu.poke(0x06, 0x01)     # Write 0x01 to PWR_MGMT_1
->>> imu.deinit()
+import pykit_explorer
+from reg_peek_poke import I2CDevice
+imu = I2CDevice(0x69)
+imu.peek(0x00)           # WHO_AM_I — should return 0xEA
+imu.dump(0x00, 0x06)     # Dump first 7 registers
+imu.poke(0x06, 0x01)     # Write 0x01 to PWR_MGMT_1
+imu.deinit()
 
 Example — SPI
 --------------
->>> from reg_peek_poke import SPIDevice
->>> import board
->>> dev = SPIDevice(board.CS)
->>> dev.peek(0x0F)            # Read register 0x0F
->>> dev.dump(0x00, 0x1F)      # Dump first 32 registers
->>> dev.deinit()
+import pykit_explorer
+from reg_peek_poke import SPIDevice
+import board
+dev = SPIDevice(board.CS)
+dev.peek(0x0F)            # Read register 0x0F
+dev.dump(0x00, 0x1F)      # Dump first 32 registers
+dev.deinit()
 """
 
 import board
@@ -79,14 +79,15 @@ class I2CDevice:
     scl      : SCL pin (default board.SCL)
     sda      : SDA pin (default board.SDA)
 
-    Example
+    Example - Read and write registers on an I2C device (e.g. ICM-20948 IMU at 0x69)
     -------
-    >>> from reg_peek_poke import I2CDevice
-    >>> imu = I2CDevice(0x69)
-    >>> imu.peek(0x00)           # Read WHO_AM_I → 0xEA on ICM-20948
-    >>> imu.poke(0x06, 0x80)     # Write to PWR_MGMT_1
-    >>> imu.dump(0x00, 0x0F)     # Dump first 16 registers
-    >>> imu.deinit()
+import pykit_explorer
+from reg_peek_poke import I2CDevice
+imu = I2CDevice(0x69)
+imu.peek(0x00)           # Read WHO_AM_I → 0xEA on ICM-20948
+imu.poke(0x06, 0x80)     # Write to PWR_MGMT_1
+imu.dump(0x00, 0x0F)     # Dump first 16 registers
+imu.deinit()
     """
 
     def __init__(self, address: int, scl=board.SCL, sda=board.SDA):
@@ -222,13 +223,14 @@ class SPIDevice:
 
     Example
     -------
-    >>> from reg_peek_poke import SPIDevice
-    >>> import board
-    >>> dev = SPIDevice(board.CS)
-    >>> dev.peek(0x0F)            # Read register 0x0F
-    >>> dev.poke(0x10, 0x00)      # Write 0x00 to register 0x10
-    >>> dev.dump(0x00, 0x1F)      # Dump first 32 registers
-    >>> dev.deinit()
+import pykit_explorer
+from reg_peek_poke import SPIDevice
+import board
+dev = SPIDevice(board.CS)
+dev.peek(0x0F)            # Read register 0x0F
+dev.poke(0x10, 0x00)      # Write 0x00 to register 0x10
+dev.dump(0x00, 0x1F)      # Dump first 32 registers
+dev.deinit()
     """
 
     def __init__(self, cs_pin, baudrate: int = 1_000_000,

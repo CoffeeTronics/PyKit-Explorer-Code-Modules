@@ -32,19 +32,16 @@ class UARTComms:
     baudrate    : baud rate     (default 115200)
     timeout     : read timeout in seconds (default 0 = non-blocking)
 
-    Example
+    Example - Send and receive strings over UART. Place a loopback jumper between 
+    DEBUG_TX and DEBUG_RX to see the sent message received.
     -------
-    >>> import pykit_explorer
-    >>> from uart_comms import UARTComms
-    >>> #default debug UART pins and baudrate 115200
-    >>> uart = UARTComms()      
-    >>> while True:                        
-    >>>     uart.send("Hello There!\r\n")
-    >>>     reply = uart.receive(32)
-    >>>     # check if we got a reply and print it
-    >>>     if reply is not None and len(reply) > 0:
-    >>>         print(reply)
-    time.sleep(1)
+import pykit_explorer
+from uart_comms import UARTComms
+uart = UARTComms()     # use debug UART
+uart.send("Hello\\n")
+reply = uart.receive(32)
+print(reply)
+
     """
 
     def __init__(self, tx=board.DEBUG_TX, rx=board.DEBUG_RX,
@@ -104,32 +101,14 @@ class UARTComms:
         counter_ref     : single-element list holding a message counter [int]
         last_time_ref   : single-element list holding last send time [float]
 
-        Example to send periodic non-blocking UART messages every 0.5 seconds, buffers incoming data, and prints complete lines along with the time elapsed between received messages to verify consistent send timing.
+        Example
         -------
-        >>> import pykit_explorer
-        >>> from uart_comms import UARTComms
-        >>> uart = UARTComms()   
-        >>> counter = [0]
-        >>> last_time = [0.0]
-        >>> send_count = 0
-        >>> buffer = ""
-        >>> last_receive_time = 0
-        >>> while True:
-        ...     uart.send_periodic(f"count={counter[0]}\n", 0.5, counter, last_time)
-        ...     reply = uart.receive(64)
-        ...     buffer += reply
-        ...     if "\n" in buffer:
-        ...         line, buffer = buffer.split("\n", 1)
-        ...     if line:
-        ...         now = time.monotonic()
-        ...    if last_receive_time:
-        ...        print(f"Received: {line} (delta={now - last_receive_time:.3f}s)")
-        ...    else:
-        ...        print(f"Received: {line}")
-        ...    last_receive_time = now
-        >>> counter[0] += 1
-        >>> time.sleep(0.01)
-
+counter   = [0]
+last_time = [0.0]
+while True:
+    uart.send_periodic(f"count={counter[0]}\\n", 0.5, counter, last_time)
+    reply = uart.receive()
+    counter[0] += 1
         """
         now = time.monotonic()
         if now - last_time_ref[0] >= interval:

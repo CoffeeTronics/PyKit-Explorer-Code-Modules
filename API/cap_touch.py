@@ -27,18 +27,19 @@ class CapTouch:
     ----------
     pin : capacitive-touch capable pin (default board.A5 / CAP1)
 
-    Example - if User button pressed it will type "Hello, world!" and if the capacitive 
-    pad is touched it will send Ctrl-Alt-Delete 
+    Example - Detect touch/release events and print transitions
     -------
-    >>> import pykit_explorer
-    >>> from cap_touch import CapTouch
-    >>> touch = CapTouch(board.A5)
-    >>> while True:
-    ...     touch.update()
-    ...     if touch.just_touched:
-    ...         print("Touched!")
-    ...     elif touch.just_released:
-    ...         print("Released!")
+import pykit_explorer
+from cap_touch import CapTouch
+pad = CapTouch(board.A5)
+while True:
+    pad.update()
+    if pad.just_touched:
+        print("Touched!")
+    if pad.just_released:
+        print("Released!")
+    time.sleep(0.05)  # debounce delay
+
     """
 
     def __init__(self, pin=board.A5):

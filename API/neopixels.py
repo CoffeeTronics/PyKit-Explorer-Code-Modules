@@ -52,15 +52,20 @@ class NeoPixels:
     num_pixels  : number of LEDs     (default 5)
     brightness  : global brightness  (default 0.1, range 0.0–1.0)
 
-    Example
+    Example - Basic usage: fill, set individual pixels, and rainbow cycle
     -------
-    >>> import pykit_explorer
-    >>> from neopixels import NeoPixels, Colors
-    >>> px = NeoPixels()
-    >>> px.fill(Colors.RED)          # all red
-    >>> px.set(2, Colors.GREEN)      # pixel 2 green only
-    >>> while True:
-    ...    px.rainbow_cycle()    # blocking rainbow animation
+import pykit_explorer
+from neopixels import NeoPixels, Colors, OFF
+px = NeoPixels()
+while True:
+    px.fill(Colors.RED)          # all red
+    time.sleep(1)
+    px.set(2, Colors.GREEN)      # pixel 2 green only
+    time.sleep(1)
+    px.set(3, OFF)      # pixel 1 off
+    time.sleep(1)
+    px.rainbow_cycle()    # blocking rainbow animation
+    
     """
 
     def __init__(self, pin=board.NEOPIXEL, num_pixels: int = 5,
