@@ -1,8 +1,8 @@
 # PyKit Ruler — CircuitPython Module Library
 
-Before starting, please read the **pykit_python_primer.html** file. Open it in your browser of choice.
+Before starting, please read the **PyKit_Python_Primer_Print_Friendly.pdf** file. Open it in your PDF reader or browser of choice.
 
-**Note:** You do **NOT** need to be proficient in Python programming to use this kit. The pykit_python_primer
+**Note:** You do **NOT** need to be proficient in Python programming to use this kit. The PyKit_Python_Primer_Print_Friendly document
 teaches everything you to know to use this kit and build cool projects.
 
 **Important Note:**  If you have problems after downloading the GitHub repo, when opening the PowerPoint file where the file gives the message: "PowerPoint found a problem with content.....PowerPoint can attempt to repair the file"
@@ -164,7 +164,7 @@ from imu_sensor import IMUSensor
 
 ---
 
-## Minimal Example — Blink the onboard LED
+## Minimal Example #1 — Blink the onboard LED
 
 ```python
 import pykit_explorer
@@ -179,9 +179,7 @@ while True:
     time.sleep(0.5)
 ```
 
----
-
-## Minimal Example — Read User Button
+## Minimal Example #2 — Read User Button
 
 ```python
 import pykit_explorer
@@ -196,7 +194,48 @@ while True:
 
 ---
 
-## Minimal Example — Tilt-controlled NeoPixel colours
+## Minimal Example #3 — Toggle LED on button press
+
+```python
+import pykit_explorer
+from digital_io import DigitalOutput, EdgeDetector
+
+led = DigitalOutput(board.LED)
+btn = EdgeDetector(board.D3)
+
+while True:
+    btn.update()
+    if btn.fell:
+        led.toggle()
+    time.sleep(0.01)
+```
+
+---
+
+## Minimal Example #4 — NeoPixels
+
+```python
+import pykit_explorer
+from neopixels import NeoPixels, Colors
+
+px = NeoPixels()  # 5 LEDs, brightness 0.1
+
+px.fill(Colors.RED)
+print("All Neopixels should be red")
+time.sleep(1)
+px.set(2, Colors.GREEN)
+print("Pixel 2 should be green")
+time.sleep(1)
+px.color_chase(Colors.BLUE)
+print("Neopixels should chase blue")
+px.rainbow_cycle(cycles=2)
+print("Neopixels should cycle through rainbow colors")
+px.off()
+```
+
+---
+
+## Minimal Example #5-1 — Tilt-controlled NeoPixel colours
 
 ```python
 import pykit_explorer
@@ -223,7 +262,29 @@ while True:
 
 ---
 
-## Minimal Example — BLE temperature logger
+## Minimal Example #5-2 — NeoPixel & IMU shake detection
+
+```python
+import pykit_explorer
+from imu_sensor import IMUSensor
+from neopixels import NeoPixels, Colors, OFF
+
+imu = IMUSensor()
+px  = NeoPixels()
+
+while True:
+    imu.print_all()
+    if imu.is_shaking():
+        px.fill(Colors.	WHITE)
+        time.sleep(0.2)
+    else:
+        px.off()
+    time.sleep(0.1)
+```
+
+---
+
+## Minimal Example #6-1 — BLE temperature logger
 
 ```python
 import pykit_explorer
@@ -237,39 +298,33 @@ while True:
     ble.poll()  # process connection status messages
     if ble.connected:
         ble.send(f"Temp: {temp.formatted_string()}\n")
+        print(f"Temp: {temp.formatted_string()}")
     time.sleep(2)
 ```
 
-## Minimal Example — BME680 air quality display
+## Minimal Example #6-2 — Receiving BLE Commands
 
 ```python
 import pykit_explorer
-from i2c_bus import I2CBus
-from bme680 import BME680Sensor
-from neopixels import NeoPixels, Colors
+from ble_uart import BLEUart
+from neopixels import NeoPixels, Colors, OFF
 
-my_i2c = I2CBus()
-sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
-px     = NeoPixels()
+ble  = BLEUart()
+px  = NeoPixels()
 
 while True:
-    sensor.print_all()
-    level = sensor.temperature_level()
-    if level == "LOW":
-        px.fill(Colors.BLUE)
-    elif level == "MED":
-        px.fill(Colors.GREEN)
-    elif level == "HIGH":
-        px.fill(Colors.YELLOW)
-    else:
-        px.fill(Colors.RED)
-    time.sleep(1)
-
+    cmd = ble.receive().strip()
+    if cmd == 'RED': px.fill(Colors.RED)
+    elif cmd == 'GREEN': px.fill(Colors.GREEN)
+    elif cmd == 'OFF': px.off()
+    if cmd:
+	    print(f"Got: {repr(cmd)}")
+    time.sleep(0.05)
 ```
 
 ---
 
-## Minimal Example — APDS9960 gesture → WAV audio
+## Minimal Example #7 — APDS9960 gesture → WAV audio
 
 ```python
 import pykit_explorer
@@ -298,7 +353,7 @@ while True:
 
 ---
 
-## Minimal Example — APDS9960 color → NeoPixels
+## Minimal Example #8 — APDS9960 color → NeoPixels
 
 ```python
 import pykit_explorer
@@ -317,9 +372,34 @@ while True:
     time.sleep(0.1)
 ```
 
----
+## Minimal Example #9 — BME680 air quality display
 
-## Minimal Example — Display a BMP image on the LCD
+```python
+import pykit_explorer
+from i2c_bus import I2CBus
+from bme680 import BME680Sensor
+from neopixels import NeoPixels, Colors
+
+my_i2c = I2CBus()
+sensor = BME680Sensor(my_i2c.bus, elevation_m=362)
+px     = NeoPixels()
+
+while True:
+    sensor.print_all()
+    level = sensor.temperature_level()
+    if level == "LOW":
+        px.fill(Colors.BLUE)
+    elif level == "MED":
+        px.fill(Colors.GREEN)
+    elif level == "HIGH":
+        px.fill(Colors.YELLOW)
+    else:
+        px.fill(Colors.RED)
+    time.sleep(1)
+
+```
+
+## Minimal Example #10 — Display a BMP image on the LCD
 
 Place your `.bmp` image files in the `/Images` folder on the CIRCUITPY drive.
 
@@ -344,7 +424,7 @@ while True:
 
 ---
 
-## Minimal Example — LCD as a serial terminal
+## Minimal Example #11 — LCD as a serial terminal
 
 CircuitPython automatically redirects `print()` output to an attached display.
 This example initialises the LCD and then uses `print()` as a simple terminal.
@@ -369,7 +449,7 @@ while True:
 
 ---
 
-## Minimal Example — Rolling coloured text labels on the LCD
+## Minimal Example #12 — Rolling coloured text labels on the LCD
 
 Requires `adafruit_bitmap_font` and `adafruit_display_text` in `/lib`, and a
 `.bdf` font file in the `/Fonts` folder on the CIRCUITPY drive.
@@ -432,7 +512,7 @@ while True:
 
 ---
 
-## Minimal Example — Concurrent NeoPixel blinks with AsyncRunner
+## Minimal Example #13 — Concurrent NeoPixel blinks with AsyncRunner
 
 Requires the `asyncio` library in `/lib`.
 
@@ -465,7 +545,7 @@ runner.run()
 
 ---
 
-## Minimal Example — CPU temperature on LCD, serial, and BLE
+## Minimal Example #14 — CPU temperature on LCD, serial, and BLE
 
 Combines `cpu_temp`, `lcd_display`, and `ble_uart` to read the CPU temperature
 and display it on the LCD with colour-coded thresholds, print to the serial
@@ -733,7 +813,7 @@ spi.deinit()
 - **Write sequence:** Always call `write_enable()` (WREN, 0x06) before any write operation.
 - **Timing:** Wait ≥5 ms after write operations for the EEPROM to complete the internal write cycle.
 - **Multi-byte writes:** For sequential writes, extend the WRITE command to include consecutive address+data pairs without re-enabling.
-  
+
   **SPI example — generic sensor on board.CS:**
 
 ```python
