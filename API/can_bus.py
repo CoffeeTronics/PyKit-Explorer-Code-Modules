@@ -38,32 +38,44 @@ class CANBus:
 
     Example - Transmitter - Send CAN frames and packed counters
     ----------------------
+import pykit_explorer
 from can_bus import CANBus
 can = CANBus()
-can.send(0x408, b"hello!")
-can.send_packed(0x408, count=1, timestamp_ms=1000)
+while True:
+    can.check_bus_state()
+    can.send(0x408, b"hello!")
+    can.send_packed(0x408, count=1, timestamp_ms=1000)
+    time.sleep(0.5)
 
     Example - Receiver - Listen for and print CAN messages
     ------------------
+import pykit_explorer
 from can_bus import CANBus
 can = CANBus()
+can.check_bus_state()
 with can.listener(match_id=0x408) as listener:
     while True:
+        can.check_bus_state()
         msg = listener.receive()
         if msg:
             print("ID:", hex(msg.id), "Data:", msg.data)
     """
 
     def __init__(self, baudrate: int = 250_000, auto_restart: bool = True):
-        # Bring transceiver out of standby if the board has a standby pin
-        if hasattr(board, "CAN_STANDBY"):
-            standby = digitalio.DigitalInOut(board.CAN_STANDBY)
-            standby.switch_to_output(False)
+        # Bring transceiver out of standby if the board has a standby pin.
+        # Must be stored as instance attributes — local vars would be GC'd after
+        # __init__ returns, deinit()ing the pin and floating STBY high = standby.
+        self._standby = None
+        _standby_pin = (getattr(board, "CAN_STANDBY", None)
+                        or getattr(board, "CAN_STDBY", None))
+        if _standby_pin is not None:
+            self._standby = digitalio.DigitalInOut(_standby_pin)
+            self._standby.switch_to_output(False)
 
-        # Enable boost converter if present
+        self._boost = None
         if hasattr(board, "BOOST_ENABLE"):
-            boost = digitalio.DigitalInOut(board.BOOST_ENABLE)
-            boost.switch_to_output(True)
+            self._boost = digitalio.DigitalInOut(board.BOOST_ENABLE)
+            self._boost.switch_to_output(True)
 
         self._can = canio.CAN(rx=board.CAN_RX, tx=board.CAN_TX,
                               baudrate=baudrate, auto_restart=auto_restart)
@@ -143,3 +155,7 @@ with can.listener(match_id=0x408) as listener:
 
     def deinit(self):
         self._can.deinit()
+        if self._standby:
+            self._standby.deinit()
+        if self._boost:
+            self._boost.deinit()
