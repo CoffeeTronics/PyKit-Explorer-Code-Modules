@@ -257,7 +257,6 @@ while True:
         px.fill(Colors.YELLOW)
     else:
         px.off()
-
 ```
 
 ---
@@ -348,7 +347,6 @@ while True:
         audio.play_wav("AudioFiles/210.wav")
     elif g == Gestures.GESTURE_RIGHT:
         audio.play_wav("AudioFiles/320.wav")
-
 ```
 
 ---
@@ -372,7 +370,7 @@ while True:
     time.sleep(0.1)
 ```
 
-## Minimal Example #9 — BME680 air quality display
+## Minimal Example #9 — ==BME==680 air quality display
 
 ```python
 import pykit_explorer
@@ -396,7 +394,6 @@ while True:
     else:
         px.fill(Colors.RED)
     time.sleep(1)
-
 ```
 
 ## Minimal Example #10 — Display a BMP image on the LCD
@@ -416,7 +413,6 @@ lcd.display.root_group = group
 
 while True:
     pass
-
 ```
 
 > **Note:** BMP images should match the display resolution (240×135) for best results.
@@ -447,9 +443,47 @@ while True:
 > **Note:** Once the display is initialised, `print()` output appears on both
 > the LCD and the USB serial console automatically.
 
+
 ---
 
-## Minimal Example #12 — Rolling coloured text labels on the LCD
+## Minimal Example #12 — Colored LCD labels with live data
+
+Four coloured labels (Red, Green, Blue, White) with adjacent value labels that
+update every 0.5 seconds with fake sensor data.
+
+```python
+import pykit_explorer
+import random
+from lcd_display import LCDDisplay, Colors
+
+lcd = LCDDisplay()
+lcd.backlight_on()
+
+group, _ = lcd.make_group(Colors.BLACK)
+
+LABEL_COLORS = [Colors.RED, Colors.GREEN, Colors.BLUE, Colors.WHITE]
+LABEL_NAMES  = ["Label 1", "Label 2", "Label 3", "Label 4"]
+Y_POSITIONS  = [20, 50, 80, 110]
+
+name_labels  = []
+value_labels = []
+
+for i in range(4):
+    name_lbl = lcd.add_label(group, LABEL_NAMES[i], 60, Y_POSITIONS[i],
+                             color=LABEL_COLORS[i], scale=2)
+    value_lbl = lcd.add_label(group, "0.00", 180, Y_POSITIONS[i],
+                              color=LABEL_COLORS[i], scale=2)
+    name_labels.append(name_lbl)
+    value_labels.append(value_lbl)
+
+while True:
+    for i in range(4):
+        value_labels[i].text = f"{random.uniform(0, 100):.2f}"
+    time.sleep(0.5)
+```
+---
+
+## Minimal Example #13 — Rolling coloured text labels on the LCD
 
 Requires `adafruit_bitmap_font` and `adafruit_display_text` in `/lib`, and a
 `.bdf` font file in the `/Fonts` folder on the CIRCUITPY drive.
@@ -504,7 +538,6 @@ while True:
     texts = [texts[-1]] + texts[:-1]
     for i in range(4):
         labels[i].text = texts[i]
-
 ```
 
 > **Note:** Colour values are 24-bit hex `0xRRGGBB`. Font files (`.bdf`) should be
@@ -512,7 +545,7 @@ while True:
 
 ---
 
-## Minimal Example #13 — Concurrent NeoPixel blinks with AsyncRunner
+## Minimal Example #14 — Concurrent NeoPixel blinks with AsyncRunner
 
 Requires the `asyncio` library in `/lib`.
 
@@ -537,7 +570,6 @@ runner.add(blink(2, 1.00, 10, Colors.RED))
 runner.add(blink(3, 0.50, 10, Colors.YELLOW))
 runner.add(blink(4, 0.25, 15, Colors.BLUE))
 runner.run()
-
 ```
 
 > **Note:** All tasks run cooperatively — use `await AsyncRunner.sleep()` (not
@@ -545,7 +577,7 @@ runner.run()
 
 ---
 
-## Minimal Example #14 — CPU temperature on LCD, serial, and BLE
+## Minimal Example #15 — CPU temperature on LCD, serial, and BLE
 
 Combines `cpu_temp`, `lcd_display`, and `ble_uart` to read the CPU temperature
 and display it on the LCD with colour-coded thresholds, print to the serial
@@ -619,8 +651,6 @@ while True:
     else:
         temp_lbl.hidden = False
         bg[0]           = Colors.BLACK
-
-
 ```
 
 ---
@@ -658,7 +688,7 @@ Scans the I2C bus and reports every device address found, a candidate device
 name based on a built-in address lookup table, and a confirmed device name read
 directly from the hardware via the WHO_AM_I or chip ID register.
 
-Covers all on-board devices (ICM-20948 IMU, BME680, APDS9960) as well as a
+Covers all on-board devices (ICM-20948 IMU, ==BME==680, APDS9960) as well as a
 wide range of common QWIIC breakout modules.
 
 ```python
