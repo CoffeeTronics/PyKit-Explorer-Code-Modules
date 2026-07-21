@@ -10,8 +10,8 @@ where a WHO_AM_I register is defined.
 
 On-board devices covered:
   0x39  APDS9960 (gesture / colour / proximity)
-  0x68  ICM-20948 (IMU, when IMU_ADDR is pulled low)
-  0x69  ICM-20948 (IMU, default address)
+  0x4A  BNO085 (IMU, default address)
+  0x4B  BNO085 (IMU, IMU_ADDR driven high)
   0x76  BME680 (environmental sensor, SDO low)
   0x77  BME680 (environmental sensor, SDO high)
 
@@ -54,13 +54,13 @@ _KNOWN_DEVICES = {
     0x45: "SHT31 (temp/humidity, ADDR high)",
     0x48: "ADS1x15 (ADC, ADDR GND) / TMP102 (temp)",
     0x49: "ADS1x15 (ADC, ADDR VDD)",
-    0x4A: "ADS1x15 (ADC, ADDR SDA)",
-    0x4B: "ADS1x15 (ADC, ADDR SCL)",
+    0x4A: "BNO085 (IMU, default) / ADS1x15 (ADC, ADDR SDA)",
+    0x4B: "BNO085 (IMU, IMU_ADDR high) / ADS1x15 (ADC, ADDR SCL)",
     0x57: "MAX17048 (fuel gauge) / 24AA02 (EEPROM)",
     0x60: "Si5351 (clock gen) / MPL3115A2 (pressure)",
     0x62: "SCD40 (CO2 sensor)",
-    0x68: "ICM-20948 (IMU, IMU_ADDR pulled low) / PCF8523 (RTC) / DS1307 (RTC)",
-    0x69: "ICM-20948 (IMU)",
+    0x68: "PCF8523 (RTC) / DS1307 (RTC)",
+    0x69: "DS3231 (RTC)",
     0x6A: "LSM6DS (IMU, ADDR low) / ICM-20X",
     0x6B: "LSM6DS (IMU, ADDR high)",
     0x70: "HT16K33 (LED matrix driver)",
@@ -78,8 +78,6 @@ _WHO_AM_I = {
     0x28: (0x00, {0xA0: "BNO055"}),
     0x29: (0x00, {0xA0: "BNO055"}),
     0x39: (0x92, {0xAB: "APDS9960"}),
-    0x68: (0x00, {0xEA: "ICM-20948"}),
-    0x69: (0x00, {0xEA: "ICM-20948"}),
     0x6A: (0x0F, {0x6C: "LSM6DS33", 0x69: "LSM6DSO", 0x6B: "LSM6DSL"}),
     0x6B: (0x0F, {0x6C: "LSM6DS33", 0x69: "LSM6DSO", 0x6B: "LSM6DSL"}),
     0x76: (0xD0, {0x61: "BME680", 0x60: "BME280", 0x58: "BMP280", 0x57: "BMP280", 0x56: "BMP280"}),

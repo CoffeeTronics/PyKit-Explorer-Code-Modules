@@ -229,6 +229,7 @@ def run():
     btn  = EdgeDetector(board.D3)
     i2c  = I2CBus()
     imu  = IMUSensor(i2c=i2c.bus)
+    imu.enable_accelerometer()
     apds = APDS9960Sensor(i2c.bus)
     apds.enable_proximity()
 

@@ -78,13 +78,13 @@ CIRCUITPY/
 
 ### Ruler Baseboard Modules
 
-| Module          | Class(es)       | What it does                                                                                                                                                                                                                                        |
-| --------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `neopixels`   | `NeoPixels`   | Drive 5 RGB LEDs; solid colours; chase, rainbow, pulse animations; bar-graph value mapping                                                                                                                                                          |
-| `lcd_display` | `LCDDisplay`  | Init 240×135 ST7789 LCD; backlight control;`make_group()` creates a persistent display group with swappable background colour; `add_label()` adds a centred text label to a group; load & position BMP sprites; bounce and IMU-driven movement |
-| `imu_sensor`  | `IMUSensor`   | Read acceleration, gyro, magnetometer; tilt angles; tilt direction; sprite delta for IMU controls                                                                                                                                                   |
-| `audio_out`   | `AudioOutput` | Sine tone generation at any frequency; WAV file playback; play scales                                                                                                                                                                               |
-| `sd_card`     | `SDCard`      | Mount SD card; read/write/append text files; CSV data logging; filesystem utilities                                                                                                                                                                 |
+| Module          | Class(es)       | What it does                                                                                                                                                                                                                                                                             |
+| --------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `neopixels`   | `NeoPixels`   | Drive 5 RGB LEDs; solid colours; chase, rainbow, pulse animations; bar-graph value mapping                                                                                                                                                                                               |
+| `lcd_display` | `LCDDisplay`  | Init 240×135 ST7789 LCD; backlight control;`make_group()` creates a persistent display group with swappable background colour; `add_label()` adds a centred text label to a group; load & position BMP sprites; bounce and IMU-driven movement                                      |
+| `imu_sensor`  | `IMUSensor`   | Read acceleration, gyro, magnetometer; quaternion orientation; linear acceleration; gravity vector; euler angles; activity/stability classification; step counter; shake detection; tilt angles; tilt direction; sprite delta for IMU controls. Default I2C address 0x4A, alternate 0x4B |
+| `audio_out`   | `AudioOutput` | Sine tone generation at any frequency; WAV file playback; play scales                                                                                                                                                                                                                    |
+| `sd_card`     | `SDCard`      | Mount SD card; read/write/append text files; CSV data logging; filesystem utilities                                                                                                                                                                                                      |
 
 ### I2C Breakout Modules (QWIIC)
 
@@ -243,6 +243,7 @@ from imu_sensor import IMUSensor
 from neopixels  import NeoPixels, Colors, OFF
 
 imu = IMUSensor()
+imu.enable_accelerometer()
 px  = NeoPixels()
 
 while True:
@@ -259,6 +260,8 @@ while True:
         px.off()
 ```
 
+> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
+
 ---
 
 ## Minimal Example #5-2 — NeoPixel & IMU shake detection
@@ -269,6 +272,7 @@ from imu_sensor import IMUSensor
 from neopixels import NeoPixels, Colors, OFF
 
 imu = IMUSensor()
+imu.enable_basic_sensors()
 px  = NeoPixels()
 
 while True:
@@ -281,7 +285,81 @@ while True:
     time.sleep(0.1)
 ```
 
+> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
+
 ---
+
+---
+
+## Minimal Example #5-3 — IMU quaternion orientation
+
+```python
+import pykit_explorer
+from imu_sensor import IMUSensor
+
+imu = IMUSensor()
+imu.enable_rotation_vector()
+# wait for the sensor to start up
+time.sleep(0.5)  
+
+while True:
+    qw, qx, qy, qz = imu.quaternion
+    roll, pitch, yaw = imu.euler_angles
+    print(f"Quaternion: w={qw:.3f} x={qx:.3f} y={qy:.3f} z={qz:.3f}")
+    print(f"Euler: roll={roll:.1f}° pitch={pitch:.1f}° yaw={yaw:.1f}°")
+    time.sleep(0.1)
+```
+
+> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
+
+---
+
+## Minimal Example #5-4 — IMU activity and step counter
+
+```python
+import pykit_explorer
+from imu_sensor import IMUSensor
+
+imu = IMUSensor()
+imu.enable_step_counter()
+imu.enable_activity_classifier()
+imu.enable_stability_classifier()
+
+while True:
+    print(f"Steps: {imu.steps}")
+    print(f"Stability: {imu.stability_classification}")
+    activity = imu.activity_classification
+    print(f"Activity: {activity.get('most_likely', 'Unknown')}")
+    time.sleep(1)
+```
+
+> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
+
+---
+
+## Minimal Example #5-5 — IMU with alternate I2C address
+
+```python
+import pykit_explorer
+import board
+from digital_io import DigitalOutput
+from imu_sensor import IMUSensor
+
+# Drive IMU_ADDR pin HIGH to select alternate address 0x4B
+imu_addr_pin = DigitalOutput(board.IMU_ADDR)
+imu_addr_pin.on()
+
+# Use alternate address 0x4B
+imu = IMUSensor(address=0x4B)
+imu.enable_accelerometer()
+
+while True:
+    ax, ay, az = imu.acceleration
+    print(f"Accel: X={ax:.2f} Y={ay:.2f} Z={az:.2f} m/s²")
+    time.sleep(0.1)
+```
+
+> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
 
 ## Minimal Example #6-1 — BLE temperature logger
 
@@ -370,7 +448,7 @@ while True:
     time.sleep(0.1)
 ```
 
-## Minimal Example #9 — ==BME==680 air quality display
+## Minimal Example #9 — BME680 air quality display
 
 ```python
 import pykit_explorer
@@ -443,7 +521,6 @@ while True:
 > **Note:** Once the display is initialised, `print()` output appears on both
 > the LCD and the USB serial console automatically.
 
-
 ---
 
 ## Minimal Example #12 — Colored LCD labels with live data
@@ -481,6 +558,7 @@ while True:
         value_labels[i].text = f"{random.uniform(0, 100):.2f}"
     time.sleep(0.5)
 ```
+
 ---
 
 ## Minimal Example #13 — Rolling coloured text labels on the LCD
@@ -688,7 +766,7 @@ Scans the I2C bus and reports every device address found, a candidate device
 name based on a built-in address lookup table, and a confirmed device name read
 directly from the hardware via the WHO_AM_I or chip ID register.
 
-Covers all on-board devices (ICM-20948 IMU, ==BME==680, APDS9960) as well as a
+Covers all on-board devices (BNO085 IMU, BME680, APDS9960) as well as a
 wide range of common QWIIC breakout modules.
 
 ```python
@@ -706,8 +784,8 @@ scanner.deinit()
 Each found device prints as two lines:
 
 ```text
-  0x69  ICM-20948 (IMU)
-        WHO_AM_I @ 0x00: 0xEA → ICM-20948
+  0x4A  BNO085 (IMU)
+        WHO_AM_I @ 0x00: 0xEA → BNO085
 ```
 
 - The first line shows the hex address and the candidate name from the address
@@ -743,14 +821,14 @@ Both `I2CDevice` and `SPIDevice` expose the same interface:
 Values are always shown as hex, decimal, and binary so they can be read
 directly against a datasheet register map.
 
-**I2C example — ICM-20948 IMU at address 0x69:**
+**I2C example — BNO085 IMU at address 0x69:**
 
 ```python
 import pykit_explorer
 
 from reg_peek_poke import I2CDevice
 
-imu = I2CDevice(0x69)
+imu = I2CDevice(0x4A)
 
 imu.peek(0x00)           # Read WHO_AM_I — should return 0xEA
 imu.dump(0x00, 0x06)     # Dump the first 7 registers
@@ -853,7 +931,7 @@ import board
 from reg_peek_poke import SPIDevice
 
 # Default convention: bit 7 = 1 for read, bit 7 = 0 for write.
-# Works with ICM-20948, LSM6DS, BMI160, and most MEMS sensors.
+# Works with BNO085, LSM6DS, BMI160, and most MEMS sensors.
 # Override read_bit / write_mask for devices with a different protocol.
 dev = SPIDevice(board.CS)
 
@@ -1057,7 +1135,7 @@ BND ||                      <- orange bar, width = bend amount
    D3=wave   TILT=vol
 ```
 
-Requires the ICM20948 IMU (on-board) and an APDS9960 proximity breakout
+Requires the BNO085 IMU (on-board) and an APDS9960 proximity breakout
 connected to the QWIIC connector.
 
 ```python
@@ -1074,3 +1152,4 @@ run()
 - **CAN** requires two boards (or a CAN analyser) to verify message exchange.
 - **Breakout modules** (`bme680`, `apds9960`) connect via the QWIIC connector and require `i2c_bus.py` on the drive. Always pass `i2c_bus_instance.bus` to the sensor constructor, not the `I2CBus` object itself.
 - **APDS9960 modes** are mutually exclusive — always call `enable_proximity()`, `enable_gesture()`, or `enable_color()` before reading, and only one at a time.
+- **BNO085 IMU** uses I2C address 0x4A by default, or 0x4B with the IMU_ADDR pin driven HIGH. Pass `address=0x4B` to the constructor to use the alternate address after setting pin IMU_ADDR as an output and driving it HIGH (True).
