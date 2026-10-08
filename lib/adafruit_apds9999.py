@@ -847,8 +847,11 @@ interrupt is triggered to reset it."""
         """
         Software reset the APDS9999
         """
-        self._reset = True
-        time.sleep(0.01)
+        try:
+            self._reset = True
+        except OSError:
+            pass
+        time.sleep(0.05)
 
         # first read after reset will time out
         try:
