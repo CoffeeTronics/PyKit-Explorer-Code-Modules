@@ -48,7 +48,7 @@ CIRCUITPY/
     ├── audio_out.py
     ├── sd_card.py
     ├── bme680.py            ← I2C breakout modules (QWIIC)
-    ├── apds9960.py
+    ├── apds9999.py
     ├── async_tasks.py       ← Utility modules
     ├── pwm_waveform_explorer.py  ← Tools
     ├── analog_waveform_explorer.py
@@ -78,23 +78,23 @@ CIRCUITPY/
 
 ### Ruler Baseboard Modules
 
-| Module          | Class(es)       | What it does                                                                                                                                                                                                                                                                             |
-| --------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `neopixels`   | `NeoPixels`   | Drive 5 RGB LEDs; solid colours; chase, rainbow, pulse animations; bar-graph value mapping                                                                                                                                                                                               |
-| `lcd_display` | `LCDDisplay`  | Init 240×135 ST7789 LCD; backlight control;`make_group()` creates a persistent display group with swappable background colour; `add_label()` adds a centred text label to a group; load & position BMP sprites; bounce and IMU-driven movement                                      |
-| `imu_sensor`  | `IMUSensor`   | Read acceleration, gyro, magnetometer; quaternion orientation; linear acceleration; gravity vector; euler angles; activity/stability classification; step counter; shake detection; tilt angles; tilt direction; sprite delta for IMU controls. Default I2C address 0x4A, alternate 0x4B |
-| `audio_out`   | `AudioOutput` | Sine tone generation at any frequency; WAV file playback; play scales                                                                                                                                                                                                                    |
-| `sd_card`     | `SDCard`      | Mount SD card; read/write/append text files; CSV data logging; filesystem utilities                                                                                                                                                                                                      |
+| Module          | Class(es)       | What it does                                                                                                                                                                                                                                        |
+| --------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `neopixels`   | `NeoPixels`   | Drive 5 RGB LEDs; solid colours; chase, rainbow, pulse animations; bar-graph value mapping                                                                                                                                                          |
+| `lcd_display` | `LCDDisplay`  | Init 240×135 ST7789 LCD; backlight control;`make_group()` creates a persistent display group with swappable background colour; `add_label()` adds a centred text label to a group; load & position BMP sprites; bounce and IMU-driven movement |
+| `imu_sensor`  | `IMUSensor`   | Read acceleration, gyro, magnetometer; tilt angles; tilt direction; sprite delta for IMU controls                                                                                                                                                   |
+| `audio_out`   | `AudioOutput` | Sine tone generation at any frequency; WAV file playback; play scales                                                                                                                                                                               |
+| `sd_card`     | `SDCard`      | Mount SD card; read/write/append text files; CSV data logging; filesystem utilities                                                                                                                                                                 |
 
 ### I2C Breakout Modules (QWIIC)
 
 Both breakout modules require an `I2CBus` instance from `i2c_bus.py`. Pass its
 `.bus` property when constructing a sensor object.
 
-| Module       | Class(es)          | What it does                                                                                                                                                                                                                    |
-| ------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bme680`   | `BME680Sensor`   | Read temperature, humidity, barometric pressure (sea-level adjusted), and gas resistance (VOC / air quality); threshold level helpers; formatted strings for LCD or logging                                                     |
-| `apds9960` | `APDS9960Sensor` | Three modes switchable at runtime:**Proximity** (0–255 distance), **Gesture** (UP/DOWN/LEFT/RIGHT swipe detection), **Color** (16-bit RGBC with 8-bit NeoPixel conversion); constants for all gesture values |
+| Module       | Class(es)          | What it does                                                                                                                                                                |
+| ------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bme680`   | `BME680Sensor`   | Read temperature, humidity, barometric pressure (sea-level adjusted), and gas resistance (VOC / air quality); threshold level helpers; formatted strings for LCD or logging |
+| `apds9999` | `APDS9999Sensor` | **Proximity** (0–2047 distance), **Lux** (ambient light), **Color** (R, G, B, IR with 8-bit NeoPixel conversion); modes can run concurrently             |
 
 ### Utility Modules
 
@@ -111,7 +111,7 @@ Ready-to-run programs that combine multiple modules. Each exposes a single
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pwm_waveform_explorer`    | Interactive oscilloscope: D3 steps frequency (100–3 kHz), A5 steps duty cycle (0–100 %);`<br>`live waveform on LCD, sine tone through speaker, LED brightness tracks duty cycle                           |
 | `analog_waveform_explorer` | Triggered oscilloscope: short press D3 steps timebase (10 ms/px → 200 µs/px), long press cycles channels A0–A5; displays Vpp, frequency, and period; per-channel colour coding; max useful signal ~400 Hz |
-| `synthio_sound_lab`        | Theremin synthesiser: IMU tilt y → pitch, tilt x → volume (3° dead zone), APDS proximity → pitch bend up;`<br>`D3 cycles waveform (SINE/SQUA/SAW/TRI); optional USB MIDI output                         |
+| `synthio_sound_lab`        | Theremin synthesiser: IMU tilt y → pitch, tilt x → volume (3° dead zone), APDS9999 proximity → pitch bend up;`<br>`D3 cycles waveform (SINE/SQUA/SAW/TRI); optional USB MIDI output                     |
 
 ---
 
@@ -127,12 +127,13 @@ analog_io    ← sensors          pwm_out       → motors, buzzers
 cap_touch    ← touch pad        servo_control → servo position
 imu_sensor   ← motion/tilt      neopixels     → RGB feedback
 bme680       ← temp/humidity    lcd_display   → graphics
-apds9960     ← proximity        audio_out     → sound / music
-apds9960     ← gesture          ble_uart      → wireless data
-apds9960     ← color            sd_card       → data logging
+apds9999     ← proximity        audio_out     → sound / music
+apds9999     ← lux              ble_uart      → wireless data
+apds9999     ← color            sd_card       → data logging
 i2c_bus      ← I2C devices      hid_input     → PC automation
 spi_bus      ← SPI devices      synthio       → real-time synthesis
 uart_comms   ← serial devices
+ble_uart     ← wireless data
 can_bus      ← CAN network
 ```
 
@@ -140,11 +141,11 @@ Common multi-module patterns:
 
 | Goal                 | Modules                                                          |
 | -------------------- | ---------------------------------------------------------------- |
-| Theremin synthesiser | `imu_sensor` + `apds9960` + `synthio` + `lcd_display`    |
+| Theremin synthesiser | `imu_sensor` + `apds9999` + `synthio` + `lcd_display`    |
 | PWM visualiser       | `digital_io` + `cap_touch` + `audio_out` + `lcd_display` |
 | Data logger          | `bme680` + `sd_card` + `lcd_display`                       |
 | BLE sensor stream    | `imu_sensor` + `bme680` + `ble_uart`                       |
-| Gesture game         | `apds9960` + `neopixels` + `lcd_display`                   |
+| Color game           | `apds9999` + `neopixels` + `lcd_display`                   |
 
 ---
 
@@ -243,7 +244,6 @@ from imu_sensor import IMUSensor
 from neopixels  import NeoPixels, Colors, OFF
 
 imu = IMUSensor()
-imu.enable_accelerometer()
 px  = NeoPixels()
 
 while True:
@@ -258,9 +258,8 @@ while True:
         px.fill(Colors.YELLOW)
     else:
         px.off()
-```
 
-> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
+```
 
 ---
 
@@ -272,7 +271,6 @@ from imu_sensor import IMUSensor
 from neopixels import NeoPixels, Colors, OFF
 
 imu = IMUSensor()
-imu.enable_basic_sensors()
 px  = NeoPixels()
 
 while True:
@@ -285,81 +283,7 @@ while True:
     time.sleep(0.1)
 ```
 
-> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
-
 ---
-
----
-
-## Minimal Example #5-3 — IMU quaternion orientation
-
-```python
-import pykit_explorer
-from imu_sensor import IMUSensor
-
-imu = IMUSensor()
-imu.enable_rotation_vector()
-# wait for the sensor to start up
-time.sleep(0.5)  
-
-while True:
-    qw, qx, qy, qz = imu.quaternion
-    roll, pitch, yaw = imu.euler_angles
-    print(f"Quaternion: w={qw:.3f} x={qx:.3f} y={qy:.3f} z={qz:.3f}")
-    print(f"Euler: roll={roll:.1f}° pitch={pitch:.1f}° yaw={yaw:.1f}°")
-    time.sleep(0.1)
-```
-
-> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
-
----
-
-## Minimal Example #5-4 — IMU activity and step counter
-
-```python
-import pykit_explorer
-from imu_sensor import IMUSensor
-
-imu = IMUSensor()
-imu.enable_step_counter()
-imu.enable_activity_classifier()
-imu.enable_stability_classifier()
-
-while True:
-    print(f"Steps: {imu.steps}")
-    print(f"Stability: {imu.stability_classification}")
-    activity = imu.activity_classification
-    print(f"Activity: {activity.get('most_likely', 'Unknown')}")
-    time.sleep(1)
-```
-
-> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
-
----
-
-## Minimal Example #5-5 — IMU with alternate I2C address
-
-```python
-import pykit_explorer
-import board
-from digital_io import DigitalOutput
-from imu_sensor import IMUSensor
-
-# Drive IMU_ADDR pin HIGH to select alternate address 0x4B
-imu_addr_pin = DigitalOutput(board.IMU_ADDR)
-imu_addr_pin.on()
-
-# Use alternate address 0x4B
-imu = IMUSensor(address=0x4B)
-imu.enable_accelerometer()
-
-while True:
-    ax, ay, az = imu.acceleration
-    print(f"Accel: X={ax:.2f} Y={ay:.2f} Z={az:.2f} m/s²")
-    time.sleep(0.1)
-```
-
-> **Note:** If you see `RuntimeError: ('Was not able to enable feature', 1)` in the Serial Monitor, the IMU startup has been corrupted. Power cycle the board to fix.
 
 ## Minimal Example #6-1 — BLE temperature logger
 
@@ -401,47 +325,44 @@ while True:
 
 ---
 
-## Minimal Example #7 — APDS9960 gesture → WAV audio
+## Minimal Example #7 — BLE commands → WAV audio
 
 ```python
 import pykit_explorer
-from i2c_bus import I2CBus
-from apds9960 import APDS9960Sensor, Gestures, Gesture_Names
+from ble_uart import BLEUart
 from audio_out import AudioOutput
 
-my_i2c = I2CBus()
-sensor = APDS9960Sensor(my_i2c.bus)
-audio  = AudioOutput()
-
-sensor.enable_gesture()
+ble   = BLEUart()
+audio = AudioOutput()
 
 while True:
-    g = sensor.wait_for_gesture()
-    if g == Gestures.GESTURE_UP:
+    cmd = ble.receive().strip()
+    if cmd == "UP":
         audio.play_wav("AudioFiles/304.wav")
-    elif g == Gestures.GESTURE_DOWN:
+    elif cmd == "DOWN":
         audio.play_wav("AudioFiles/140.wav")
-    elif g == Gestures.GESTURE_LEFT:
+    elif cmd == "LEFT":
         audio.play_wav("AudioFiles/210.wav")
-    elif g == Gestures.GESTURE_RIGHT:
+    elif cmd == "RIGHT":
         audio.play_wav("AudioFiles/320.wav")
+    if cmd:
+        print(f"Got: {repr(cmd)}")
+    time.sleep(0.05)
 ```
 
 ---
 
-## Minimal Example #8 — APDS9960 color → NeoPixels
+## Minimal Example #8 — APDS9999 color → NeoPixels
 
 ```python
 import pykit_explorer
 from i2c_bus import I2CBus
-from apds9960 import APDS9960Sensor
+from apds9999 import APDS9999Sensor
 from neopixels import NeoPixels
 
 my_i2c = I2CBus()
-sensor = APDS9960Sensor(my_i2c.bus)
+sensor = APDS9999Sensor(my_i2c.bus)
 px     = NeoPixels()
-
-sensor.enable_color()
 
 while True:
     px.fill(sensor.color_as_neopixel())
@@ -491,6 +412,7 @@ lcd.display.root_group = group
 
 while True:
     pass
+
 ```
 
 > **Note:** BMP images should match the display resolution (240×135) for best results.
@@ -523,45 +445,7 @@ while True:
 
 ---
 
-## Minimal Example #12 — Colored LCD labels with live data
-
-Four coloured labels (Red, Green, Blue, White) with adjacent value labels that
-update every 0.5 seconds with fake sensor data.
-
-```python
-import pykit_explorer
-import random
-from lcd_display import LCDDisplay, Colors
-
-lcd = LCDDisplay()
-lcd.backlight_on()
-
-group, _ = lcd.make_group(Colors.BLACK)
-
-LABEL_COLORS = [Colors.RED, Colors.GREEN, Colors.BLUE, Colors.WHITE]
-LABEL_NAMES  = ["Label 1", "Label 2", "Label 3", "Label 4"]
-Y_POSITIONS  = [20, 50, 80, 110]
-
-name_labels  = []
-value_labels = []
-
-for i in range(4):
-    name_lbl = lcd.add_label(group, LABEL_NAMES[i], 60, Y_POSITIONS[i],
-                             color=LABEL_COLORS[i], scale=2)
-    value_lbl = lcd.add_label(group, "0.00", 180, Y_POSITIONS[i],
-                              color=LABEL_COLORS[i], scale=2)
-    name_labels.append(name_lbl)
-    value_labels.append(value_lbl)
-
-while True:
-    for i in range(4):
-        value_labels[i].text = f"{random.uniform(0, 100):.2f}"
-    time.sleep(0.5)
-```
-
----
-
-## Minimal Example #13 — Rolling coloured text labels on the LCD
+## Minimal Example #12 — Rolling coloured text labels on the LCD
 
 Requires `adafruit_bitmap_font` and `adafruit_display_text` in `/lib`, and a
 `.bdf` font file in the `/Fonts` folder on the CIRCUITPY drive.
@@ -616,6 +500,7 @@ while True:
     texts = [texts[-1]] + texts[:-1]
     for i in range(4):
         labels[i].text = texts[i]
+
 ```
 
 > **Note:** Colour values are 24-bit hex `0xRRGGBB`. Font files (`.bdf`) should be
@@ -623,7 +508,7 @@ while True:
 
 ---
 
-## Minimal Example #14 — Concurrent NeoPixel blinks with AsyncRunner
+## Minimal Example #13 — Concurrent NeoPixel blinks with AsyncRunner
 
 Requires the `asyncio` library in `/lib`.
 
@@ -648,6 +533,7 @@ runner.add(blink(2, 1.00, 10, Colors.RED))
 runner.add(blink(3, 0.50, 10, Colors.YELLOW))
 runner.add(blink(4, 0.25, 15, Colors.BLUE))
 runner.run()
+
 ```
 
 > **Note:** All tasks run cooperatively — use `await AsyncRunner.sleep()` (not
@@ -655,7 +541,7 @@ runner.run()
 
 ---
 
-## Minimal Example #15 — CPU temperature on LCD, serial, and BLE
+## Minimal Example #14 — CPU temperature on LCD, serial, and BLE
 
 Combines `cpu_temp`, `lcd_display`, and `ble_uart` to read the CPU temperature
 and display it on the LCD with colour-coded thresholds, print to the serial
@@ -729,6 +615,8 @@ while True:
     else:
         temp_lbl.hidden = False
         bg[0]           = Colors.BLACK
+
+
 ```
 
 ---
@@ -766,7 +654,7 @@ Scans the I2C bus and reports every device address found, a candidate device
 name based on a built-in address lookup table, and a confirmed device name read
 directly from the hardware via the WHO_AM_I or chip ID register.
 
-Covers all on-board devices (BNO085 IMU, BME680, APDS9960) as well as a
+Covers all on-board devices (ICM-20948 IMU, BME680, APDS9999) as well as a
 wide range of common QWIIC breakout modules.
 
 ```python
@@ -784,8 +672,8 @@ scanner.deinit()
 Each found device prints as two lines:
 
 ```text
-  0x4A  BNO085 (IMU)
-        WHO_AM_I @ 0x00: 0xEA → BNO085
+  0x69  ICM-20948 (IMU)
+        WHO_AM_I @ 0x00: 0xEA → ICM-20948
 ```
 
 - The first line shows the hex address and the candidate name from the address
@@ -821,14 +709,14 @@ Both `I2CDevice` and `SPIDevice` expose the same interface:
 Values are always shown as hex, decimal, and binary so they can be read
 directly against a datasheet register map.
 
-**I2C example — BNO085 IMU at address 0x69:**
+**I2C example — ICM-20948 IMU at address 0x69:**
 
 ```python
 import pykit_explorer
 
 from reg_peek_poke import I2CDevice
 
-imu = I2CDevice(0x4A)
+imu = I2CDevice(0x69)
 
 imu.peek(0x00)           # Read WHO_AM_I — should return 0xEA
 imu.dump(0x00, 0x06)     # Dump the first 7 registers
@@ -931,7 +819,7 @@ import board
 from reg_peek_poke import SPIDevice
 
 # Default convention: bit 7 = 1 for read, bit 7 = 0 for write.
-# Works with BNO085, LSM6DS, BMI160, and most MEMS sensors.
+# Works with ICM-20948, LSM6DS, BMI160, and most MEMS sensors.
 # Override read_bit / write_mask for devices with a different protocol.
 dev = SPIDevice(board.CS)
 
@@ -1119,7 +1007,7 @@ tilt. Keeping the board flat silences the output without stopping synthesis.
 | USER button (D3)             | Cycle waveform: SINE → SQUARE → SAW → TRIANGLE (wraps) |
 | Tilt left / right (Y-axis)   | Pitch sweep across the selected range                     |
 | Tilt forward / back (X-axis) | Volume: <3° = silent, 45° = full                        |
-| Hand near APDS proximity     | Pitch bends up by 0 to +2 semitones (closer = more bend)  |
+| Hand near APDS9999 proximity | Pitch bends up by 0 to +2 semitones (closer = more bend)  |
 
 **What you see on the LCD**
 
@@ -1135,7 +1023,7 @@ BND ||                      <- orange bar, width = bend amount
    D3=wave   TILT=vol
 ```
 
-Requires the BNO085 IMU (on-board) and an APDS9960 proximity breakout
+Requires the ICM20948 IMU (on-board) and an APDS9999 proximity breakout
 connected to the QWIIC connector.
 
 ```python
@@ -1150,6 +1038,5 @@ run()
 - **HID** requires `usb_hid.enable()` in `boot.py`.
 - **WAV files** must be mono, 16-bit PCM, ≤ 22 050 Hz.
 - **CAN** requires two boards (or a CAN analyser) to verify message exchange.
-- **Breakout modules** (`bme680`, `apds9960`) connect via the QWIIC connector and require `i2c_bus.py` on the drive. Always pass `i2c_bus_instance.bus` to the sensor constructor, not the `I2CBus` object itself.
-- **APDS9960 modes** are mutually exclusive — always call `enable_proximity()`, `enable_gesture()`, or `enable_color()` before reading, and only one at a time.
-- **BNO085 IMU** uses I2C address 0x4A by default, or 0x4B with the IMU_ADDR pin driven HIGH. Pass `address=0x4B` to the constructor to use the alternate address after setting pin IMU_ADDR as an output and driving it HIGH (True).
+- **Breakout modules** (`bme680`, `apds9999`) connect via the QWIIC connector and require `i2c_bus.py` on the drive. Always pass `i2c_bus_instance.bus` to the sensor constructor, not the `I2CBus` object itself.
+- **APDS9999 modes** are NOT mutually exclusive — proximity and light/color sensing can run simultaneously. Both sensors are enabled by default.
