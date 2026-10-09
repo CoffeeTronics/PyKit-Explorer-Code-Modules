@@ -67,7 +67,7 @@ from lcd_display import LCDDisplay, Colors
 from digital_io import EdgeDetector
 from i2c_bus import I2CBus
 from imu_sensor import IMUSensor
-from apds9960 import APDS9960Sensor
+from apds9999 import APDS9999Sensor
 
 # ---------------------------------------------------------------------------
 # Optional MIDI output (channel 1)
@@ -229,8 +229,7 @@ def run():
     btn  = EdgeDetector(board.D3)
     i2c  = I2CBus()
     imu  = IMUSensor(i2c=i2c.bus)
-    imu.enable_accelerometer()
-    apds = APDS9960Sensor(i2c.bus)
+    apds = APDS9999Sensor(i2c.bus)
     apds.enable_proximity()
 
     lcd.backlight_on()
