@@ -170,4 +170,6 @@ while True:
         self._pixels.show()
 
     def deinit(self):
+        """Turn all pixels off and release the data pin."""
         self.off()
+        self._pixels.deinit()

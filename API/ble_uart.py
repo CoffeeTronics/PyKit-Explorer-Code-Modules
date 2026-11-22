@@ -75,8 +75,12 @@ while True:
             except ValueError:
                 pass
 
+        # 512-byte receive buffer: the RNBD451 sends ~140 bytes of %...% status
+        # messages on every connection; the 64-byte default overflowed whenever
+        # poll() wasn't called for a while, corrupting the status parser.
         self._uart = busio.UART(board.BLE_TX, board.BLE_RX,
-                                baudrate=baudrate, timeout=0.01)
+                                baudrate=baudrate, timeout=0.01,
+                                receiver_buffer_size=512)
         self._reset_pin = digitalio.DigitalInOut(board.BLE_CLR)
         self._reset_pin.direction = digitalio.Direction.OUTPUT
 
@@ -162,6 +166,7 @@ while True:
                 self._connected = True
             if "DISCONNECT" in before or "REBOOT" in before:
                 self._connected = False
+                self._hw_connected = False
             user_data += before
             if "%" not in rest:
                 if len("%" + rest) > 256:
@@ -180,6 +185,7 @@ while True:
                 self._connected = True
             elif msg.startswith("DISCONNECT") or msg.startswith("REBOOT"):
                 self._connected = False
+                self._hw_connected = False
             self._rx_buf = rest
         user_data += self._rx_buf
         self._rx_buf = ""

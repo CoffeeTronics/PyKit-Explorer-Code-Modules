@@ -59,9 +59,9 @@ sd.append_text("log.txt", "Another line\\n")
 
     def __init__(self, mount_point: str = "/sd"):
         self._mount = mount_point
-        spi = busio.SPI(board.SD_SCK, board.SD_MOSI, board.SD_MISO)
-        cs  = digitalio.DigitalInOut(board.SD_CS)
-        sdcard = adafruit_sdcard.SDCard(spi, cs)
+        self._spi = busio.SPI(board.SD_SCK, board.SD_MOSI, board.SD_MISO)
+        self._cs  = digitalio.DigitalInOut(board.SD_CS)
+        sdcard = adafruit_sdcard.SDCard(self._spi, self._cs)
         vfs = storage.VfsFat(sdcard)
         storage.mount(vfs, mount_point)
 
@@ -173,3 +173,14 @@ sd.log_csv("temp.csv", [time.monotonic(), 24.5, 65.2])
         """Delete *filename* from the SD card."""
         import os
         os.remove(self._path(filename))
+
+    # -- Cleanup -------------------------------------------------------------
+
+    def deinit(self):
+        """Unmount the card and release the SPI bus and CS pin."""
+        try:
+            storage.umount(self._mount)
+        except OSError:
+            pass
+        self._spi.deinit()
+        self._cs.deinit()

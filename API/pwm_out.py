@@ -43,7 +43,9 @@ while True:
     """
 
     def __init__(self, pin=board.D5, frequency: int = 5000, duty_cycle: int = 0):
-        self._pwm = pwmio.PWMOut(pin, frequency=frequency, duty_cycle=duty_cycle)
+        # variable_frequency=True is required for the frequency setter and beep()
+        self._pwm = pwmio.PWMOut(pin, frequency=frequency, duty_cycle=duty_cycle,
+                                 variable_frequency=True)
 
     # -- Duty cycle ----------------------------------------------------------
 
@@ -90,14 +92,14 @@ while True:
         """Ramp duty cycle from 0% to 100% over *duration* seconds (blocking)."""
         delay = duration / steps
         for i in range(steps + 1):
-            self.duty_percent = i
+            self.duty_percent = i * 100.0 / steps
             time.sleep(delay)
 
     def fade_out(self, duration: float = 1.0, steps: int = 100):
         """Ramp duty cycle from 100% to 0% over *duration* seconds (blocking)."""
         delay = duration / steps
         for i in range(steps, -1, -1):
-            self.duty_percent = i
+            self.duty_percent = i * 100.0 / steps
             time.sleep(delay)
 
     def beep(self, frequency: int = 1000, duration: float = 0.1):

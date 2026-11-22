@@ -99,25 +99,30 @@ audio.play_wav("AudioFiles/140.wav")
     def _make_sine(self, frequency: int, volume: float = 0.1) -> RawSample:
         """Build a RawSample buffer containing an integer number of sine cycles.
 
-        Uses GCD(sample_rate, frequency) to find the shortest buffer that holds
-        a whole number of complete cycles, so the loop point is always exact.
+        Chooses the whole number of cycles whose buffer (at most 400 samples)
+        best matches the requested pitch, so the loop point is always exact and
+        the buffer is quick to build (pitch error is a few hundredths of a %).
 
         Example - 3000 Hz at 8000 Hz sample rate:
-            gcd(8000, 3000) = 1000  →  3 cycles in 8 samples  →  3000 Hz ✓
+            3 cycles in 8 samples  →  3000 Hz ✓
             (the naive 8000 // 3000 = 2 samples produces two equal DC values
             because sin(0) ≈ sin(π) ≈ 0, so the speaker never moves)
         """
         sample_rate = 8000
-        a, b = sample_rate, frequency
-        while b:
-            a, b = b, a % b
-        g = a
-        num_cycles = frequency // g        # complete sine cycles in the buffer
-        length     = sample_rate // g      # samples needed
-        buf = array.array("H", [0] * length)
-        for i in range(length):
-            buf[i] = int((1 + math.sin(math.pi * 2 * num_cycles * i / length))
-                         * volume * (2 ** 15 - 1))
+        best = None
+        for cycles in range(1, frequency * 400 // sample_rate + 2):
+            n = max(2, round(cycles * sample_rate / frequency))
+            if n > 400 and best:
+                break
+            err = abs(cycles * sample_rate / n - frequency)
+            if best is None or err < best[0]:
+                best = (err, cycles, n)
+        _, num_cycles, length = best       # whole cycles / samples in the buffer
+        scale = volume * (2 ** 15 - 1)
+        step = math.pi * 2 * num_cycles / length
+        # Generator (not a list) keeps peak RAM at the size of the array itself
+        buf = array.array("H", (int((1 + math.sin(step * i)) * scale)
+                                 for i in range(length)))
         return RawSample(buf)
 
     def play_tone(self, frequency: int = 1000, volume: float = 0.1,

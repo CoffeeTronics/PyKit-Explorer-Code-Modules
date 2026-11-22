@@ -85,7 +85,7 @@ import pykit_explorer
 from reg_peek_poke import I2CDevice
 imu = I2CDevice(0x69)
 imu.peek(0x00)           # Read WHO_AM_I → 0xEA on ICM-20948
-imu.poke(0x06, 0x80)     # Write to PWR_MGMT_1
+imu.poke(0x06, 0x01)     # Write PWR_MGMT_1 to wake the IMU from sleep
 imu.dump(0x00, 0x0F)     # Dump first 16 registers
 imu.deinit()
     """

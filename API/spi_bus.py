@@ -14,7 +14,8 @@ Hardware
   board.CS    (PB01) — default chip select
 
 The board also provides board.LCD_SPI() and board.SD_SPI() as dedicated
-buses for the LCD and SD card — this module uses the default board.SPI().
+buses for the LCD and SD card.  SPIBus uses board.SPI() by default; pass
+spi=board.SD_SPI() (or another busio.SPI) to use a different bus.
 
 Use this module for:
   - Communicating with external SPI peripherals (sensors, ADCs, EEPROMs, etc.)
@@ -35,6 +36,8 @@ class SPIBus:
     baudrate  : SPI clock speed in Hz (default 1 MHz)
     polarity  : clock idle state (default 0)
     phase     : clock sampling edge (default 0)
+    spi       : SPI bus to use (default board.SPI()), e.g. board.SD_SPI()
+                for the SD-card bus.  deinit() releases this bus too.
 
     Example - Send a command and read a response in one transaction
     -------
@@ -44,11 +47,19 @@ spi = SPIBus()
 data = spi.transfer(bytes([0x9F, 0x00, 0x00, 0x00]))
 print("Response:", [hex(b) for b in data])
 
+    Example - Loop back data on the SD-card SPI bus (SD_MOSI wired to SD_MISO)
+    -------
+import pykit_explorer
+from spi_bus import SPIBus
+sd_bus = SPIBus(board.SD_CS, spi=board.SD_SPI())
+print(sd_bus.transfer(bytes([0x12, 0x34])))   # -> bytearray(b'\x124')
+sd_bus.deinit()
+
     """
 
     def __init__(self, cs_pin=board.CS, baudrate: int = 1_000_000,
-                 polarity: int = 0, phase: int = 0):
-        self._spi = board.SPI()
+                 polarity: int = 0, phase: int = 0, spi=None):
+        self._spi = board.SPI() if spi is None else spi
         self._cs = digitalio.DigitalInOut(cs_pin)
         self._cs.direction = digitalio.Direction.OUTPUT
         self._cs.value = True

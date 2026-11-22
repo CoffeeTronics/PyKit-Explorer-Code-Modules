@@ -94,6 +94,7 @@ while True:
         displayio.release_displays()
 
         spi    = board.LCD_SPI()
+        self._spi = spi
         tft_cs = board.LCD_CS
         tft_dc = board.D4
 
@@ -489,6 +490,14 @@ while True:
         """
         group.x = max(0, min(WIDTH  - sprite_w, group.x + dx))
         group.y = max(0, min(HEIGHT - sprite_h, group.y + dy))
+
+    # -- Cleanup -------------------------------------------------------------
+
+    def deinit(self):
+        """Release the display, its SPI bus and the backlight pin."""
+        displayio.release_displays()
+        self._spi.deinit()
+        self._backlight.deinit()
 
 
 class ScrollLabel:

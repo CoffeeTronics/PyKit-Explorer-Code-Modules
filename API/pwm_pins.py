@@ -11,6 +11,8 @@ Scans all board pins and classifies each one by its PWM capability:
                        cannot be used for PWM while the board firmware holds
                        that timer
   No PWM             — pin has no PWM capability at all
+  In use             — pin is already claimed by another object, so its
+                       PWM capability could not be tested
 
 Results are returned as three lists and can be printed in a consistent,
 sorted order via ``report()``.
@@ -44,6 +46,7 @@ class PWMPinScanner:
     pwm_prevented  : list of (pin_name, reason) tuples — PWM capable but
                      blocked by a system peripheral or timer conflict
     pwm_off        : list of pin name strings with no PWM capability
+    pwm_in_use     : list of pin name strings already claimed (not tested)
 
     Example - Scan and report PWM capabilities for each pin
     -------
@@ -63,13 +66,15 @@ print(f"\nNo PWM: {scanner.pwm_off}")
         self.pwm_on = []
         self.pwm_prevented = []
         self.pwm_off = []
+        self.pwm_in_use = []
         self._pwm_capable = []  # internal: (pin_name, pin) for blocker probing
 
     def scan(self):
-        """Scan all board pins and populate pwm_on, pwm_prevented, pwm_off."""
+        """Scan all board pins and populate pwm_on, pwm_prevented, pwm_off, pwm_in_use."""
         self.pwm_on = []
         self.pwm_prevented = []
         self.pwm_off = []
+        self.pwm_in_use = []
         self._pwm_capable = []
 
         for pin_name in dir(board):
@@ -82,8 +87,11 @@ print(f"\nNo PWM: {scanner.pwm_off}")
                 p = pwmio.PWMOut(pin)
                 self._pwm_capable.append((pin_name, pin))
                 self.pwm_on.append(pin_name)
-            except ValueError:
-                self.pwm_off.append(pin_name)
+            except ValueError as e:
+                if "in use" in str(e):
+                    self.pwm_in_use.append(pin_name)
+                else:
+                    self.pwm_off.append(pin_name)
             except RuntimeError:
                 reason = self._find_blocker(pin_name)
                 self.pwm_prevented.append((pin_name, reason))
@@ -106,7 +114,7 @@ print(f"\nNo PWM: {scanner.pwm_off}")
 
     def report(self):
         """Print scan results: PWM on, then PWM prevented, then no PWM."""
-        if not self.pwm_on and not self.pwm_prevented and not self.pwm_off:
+        if not (self.pwm_on or self.pwm_prevented or self.pwm_off or self.pwm_in_use):
             print("No scan results — call scan() first.")
             return
 
@@ -118,3 +126,6 @@ print(f"\nNo PWM: {scanner.pwm_off}")
 
         for pin_name in self.pwm_off:
             print("No PWM on:", pin_name)
+
+        for pin_name in self.pwm_in_use:
+            print("Pin in use (PWM not tested):", pin_name)
