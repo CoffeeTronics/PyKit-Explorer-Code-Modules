@@ -1038,5 +1038,6 @@ run()
 - **HID** requires `usb_hid.enable()` in `boot.py`.
 - **WAV files** must be mono, 16-bit PCM, ≤ 22 050 Hz.
 - **CAN** requires two boards (or a CAN analyser) to verify message exchange.
+- **CAN receiving:** keep calling `listener.receive()` (or `listener.in_waiting()`) in your loop while frames are arriving. Do not `time.sleep()` while you expect frames: the board holds only **3** unread CAN frames (for all IDs together), and any more that arrive while your code sleeps are lost. To wait, use `receive()` with a `timeout`; it waits *and* keeps reading the bus. Frames for other IDs that have already been read are kept for you (up to 32), and you can create `listener()` / `receive_once()` as often as you like.
 - **Breakout modules** (`bme680`, `apds9999`) connect via the QWIIC connector and require `i2c_bus.py` on the drive. Always pass `i2c_bus_instance.bus` to the sensor constructor, not the `I2CBus` object itself.
 - **APDS9999 modes** are NOT mutually exclusive — proximity and light/color sensing can run simultaneously. Both sensors are enabled by default.
