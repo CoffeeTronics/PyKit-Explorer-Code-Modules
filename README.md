@@ -5,9 +5,6 @@ Before starting, please read the **PyKit_Python_Primer_Print_Friendly.pdf** file
 **Note:** You do **NOT** need to be proficient in Python programming to use this kit. The PyKit_Python_Primer_Print_Friendly document
 teaches everything you to know to use this kit and build cool projects.
 
-**Important Note:**  If you have problems after downloading the GitHub repo, when opening the PowerPoint file where the file gives the message: "PowerPoint found a problem with content.....PowerPoint can attempt to repair the file"
-in the GitHub repo, click on the link to the file *UC_CircuitPython_Workshop.pptx* and click the **Download raw file** button to download the file. Then open normally.
-
 ## Workshop/Hackathon Reference
 
 This library provides APIs for all of the hardware on the Microchip Curiosity PyKit Explorer.
