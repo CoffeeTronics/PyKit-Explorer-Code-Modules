@@ -77,7 +77,9 @@ class IMUSensor:
         Alternate address 0x4B can be used for non-hardwired PCBs.
     enable_all : bool, optional
         If True, enables accelerometer, gyroscope, and magnetometer on init.
-        If False (default), you must call enable_* methods manually.
+        If False (default), each reading (acceleration, gyro, magnetic,
+        quaternion, ...) switches its own report on the first time it is
+        read; calling the enable_* methods first still works.
 
     Raises
     ------
@@ -120,8 +122,9 @@ class IMUSensor:
         else:
             self._bno = BNO08X_I2C(i2c)
 
-        # Track which features are enabled
+        # Track which features are enabled, and when (first reports take a moment)
         self._enabled_features = set()
+        self._enabled_at = {}
 
         if enable_all:
             self.enable_basic_sensors()
@@ -132,6 +135,7 @@ class IMUSensor:
         """Enable a specific BNO report feature."""
         self._bno.enable_feature(feature)
         self._enabled_features.add(feature)
+        self._enabled_at[feature] = time.monotonic()
 
     def enable_accelerometer(self):
         """Enable accelerometer only."""
@@ -200,66 +204,88 @@ class IMUSensor:
         self.enable_activity_classifier()
         self.enable_shake_detector()
 
+    # -- Reading with automatic enable ---------------------------------------
+
+    # How long a reading waits for the first report after its feature is enabled
+    _FIRST_REPORT_TIMEOUT_S = 1.0
+
+    def _read(self, feature, name):
+        """Return adafruit_bno08x's *name* reading, enabling *feature* if needed.
+
+        Just after a feature is enabled the BNO085 has not sent a report yet
+        and adafruit_bno08x raises RuntimeError, so wait briefly for it.
+        """
+        if feature not in self._enabled_features:
+            self.enable_feature(feature)
+        while True:
+            try:
+                return getattr(self._bno, name)
+            except RuntimeError:
+                since = time.monotonic() - self._enabled_at.get(feature, 0.0)
+                if since > self._FIRST_REPORT_TIMEOUT_S:
+                    raise
+                time.sleep(0.01)
+
     # -- Raw sensor data -----------------------------------------------------
 
     @property
     def acceleration(self) -> tuple:
         """Acceleration in m/s² as (x, y, z)."""
-        return self._bno.acceleration
+        return self._read(BNO_REPORT_ACCELEROMETER, "acceleration")
 
     @property
     def gyro(self) -> tuple:
         """Angular velocity in rad/s as (x, y, z)."""
-        return self._bno.gyro
+        return self._read(BNO_REPORT_GYROSCOPE, "gyro")
 
     @property
     def magnetic(self) -> tuple:
         """Magnetic field in µT as (x, y, z)."""
-        return self._bno.magnetic
+        return self._read(BNO_REPORT_MAGNETOMETER, "magnetic")
 
     # -- Sensor fusion data --------------------------------------------------
 
     @property
     def quaternion(self) -> tuple:
-        """Rotation vector as quaternion (w, x, y, z).
+        """Rotation vector as quaternion (x, y, z, w).
 
-        Requires enable_rotation_vector() to be called first.
+        Enabled automatically on first read (or call enable_rotation_vector() first).
         """
-        return self._bno.quaternion
+        return self._read(BNO_REPORT_ROTATION_VECTOR, "quaternion")
 
     @property
     def game_quaternion(self) -> tuple:
-        """Game rotation vector as quaternion (w, x, y, z).
+        """Game rotation vector as quaternion (x, y, z, w).
 
         This quaternion does not use magnetometer correction,
         making it more stable for gaming applications.
-        Requires enable_game_rotation_vector() to be called first.
+        Enabled automatically on first read (or call enable_game_rotation_vector() first).
         """
-        return self._bno.game_quaternion
+        return self._read(BNO_REPORT_GAME_ROTATION_VECTOR, "game_quaternion")
 
     @property
     def geomagnetic_quaternion(self) -> tuple:
-        """Geomagnetic rotation vector as quaternion (w, x, y, z).
+        """Geomagnetic rotation vector as quaternion (x, y, z, w).
 
-        Requires enable_geomagnetic_rotation_vector() to be called first.
+        Enabled automatically on first read (or call enable_geomagnetic_rotation_vector() first).
         """
-        return self._bno.geomagnetic_quaternion
+        return self._read(BNO_REPORT_GEOMAGNETIC_ROTATION_VECTOR, "geomagnetic_quaternion")
 
     @property
     def linear_acceleration(self) -> tuple:
         """Linear acceleration (gravity removed) in m/s² as (x, y, z).
 
-        Requires enable_linear_acceleration() to be called first.
+        Enabled automatically on first read (or call enable_linear_acceleration() first).
         """
-        return self._bno.linear_acceleration
+        return self._read(BNO_REPORT_LINEAR_ACCELERATION, "linear_acceleration")
 
     @property
     def gravity(self) -> tuple:
         """Gravity vector in m/s² as (x, y, z).
 
-        Requires enable_gravity() to be called first.
+        Enabled automatically on first read (or call enable_gravity() first).
         """
-        return self._bno.gravity
+        return self._read(BNO_REPORT_GRAVITY, "gravity")
 
     # -- Activity and stability ----------------------------------------------
 
@@ -267,17 +293,17 @@ class IMUSensor:
     def steps(self) -> int:
         """Step count since last reset.
 
-        Requires enable_step_counter() to be called first.
+        Enabled automatically on first read (or call enable_step_counter() first).
         """
-        return self._bno.steps
+        return self._read(BNO_REPORT_STEP_COUNTER, "steps")
 
     @property
     def stability_classification(self) -> str:
         """Stability state: 'Unknown', 'On Table', 'Stationary', 'Stable', or 'In motion'.
 
-        Requires enable_stability_classifier() to be called first.
+        Enabled automatically on first read (or call enable_stability_classifier() first).
         """
-        return self._bno.stability_classification
+        return self._read(BNO_REPORT_STABILITY_CLASSIFIER, "stability_classification")
 
     @property
     def activity_classification(self) -> dict:
@@ -287,17 +313,17 @@ class IMUSensor:
         'Unknown', 'In-Vehicle', 'On-Bicycle', 'On-Foot', 'Still',
         'Tilting', 'Walking', 'Running', 'OnStairs'.
 
-        Requires enable_activity_classifier() to be called first.
+        Enabled automatically on first read (or call enable_activity_classifier() first).
         """
-        return self._bno.activity_classification
+        return self._read(BNO_REPORT_ACTIVITY_CLASSIFIER, "activity_classification")
 
     @property
     def shake(self) -> bool:
         """True if a shake was detected (latching, resets on read).
 
-        Requires enable_shake_detector() to be called first.
+        Enabled automatically on first read (or call enable_shake_detector() first).
         """
-        return self._bno.shake
+        return self._read(BNO_REPORT_SHAKE_DETECTOR, "shake")
 
     # -- Calibration ---------------------------------------------------------
 
@@ -319,23 +345,23 @@ class IMUSensor:
     @property
     def tilt_angle_x(self) -> float:
         """Board tilt about the X-axis in degrees (-90 to +90)."""
-        ax, ay, az = self._bno.acceleration
+        ax, ay, az = self.acceleration
         return math.degrees(math.atan2(ay, math.sqrt(ax ** 2 + az ** 2)))
 
     @property
     def tilt_angle_y(self) -> float:
         """Board tilt about the Y-axis in degrees (-90 to +90)."""
-        ax, ay, az = self._bno.acceleration
+        ax, ay, az = self.acceleration
         return math.degrees(math.atan2(ax, math.sqrt(ay ** 2 + az ** 2)))
 
     @property
     def euler_angles(self) -> tuple:
         """Euler angles (roll, pitch, yaw) in degrees computed from quaternion.
 
-        Requires enable_rotation_vector() to be called first.
+        Enabled automatically on first read (or call enable_rotation_vector() first).
         Returns (roll, pitch, yaw) tuple.
         """
-        qw, qx, qy, qz = self._bno.quaternion
+        qx, qy, qz, qw = self.quaternion     # adafruit_bno08x order: (i, j, k, real)
 
         # Roll (x-axis rotation)
         sinr_cosp = 2 * (qw * qx + qy * qz)
@@ -360,7 +386,7 @@ class IMUSensor:
 
     def tilt_direction(self) -> str:
         """Return a coarse tilt direction string: 'LEFT', 'RIGHT', 'UP', 'DOWN', or 'FLAT'."""
-        ax, ay, _ = self._bno.acceleration
+        ax, ay, _ = self.acceleration
         if ax > self.TILT_THRESHOLD:
             return "RIGHT"
         if ax < -self.TILT_THRESHOLD:
@@ -377,7 +403,7 @@ class IMUSensor:
         Gravity (~9.8 m/s²) is always present, so threshold should be > 9.8.
         Default 15.0 catches moderate shaking.
         """
-        ax, ay, az = self._bno.acceleration
+        ax, ay, az = self.acceleration
         magnitude = math.sqrt(ax ** 2 + ay ** 2 + az ** 2)
         return magnitude > threshold
 
@@ -398,7 +424,7 @@ class IMUSensor:
         -------
         (dx, dy) tuple of ints
         """
-        ax, ay, _ = self._bno.acceleration
+        ax, ay, _ = self.acceleration
         return (int(ax * scale), -int(ay * scale))
 
     # -- Device info ---------------------------------------------------------
@@ -417,15 +443,15 @@ class IMUSensor:
 
     def print_all(self):
         """Print all basic sensor axes to the console."""
-        ax, ay, az = self._bno.acceleration
-        gx, gy, gz = self._bno.gyro
-        mx, my, mz = self._bno.magnetic
+        ax, ay, az = self.acceleration
+        gx, gy, gz = self.gyro
+        mx, my, mz = self.magnetic
         print(f"Accel  X:{ax:6.2f} Y:{ay:6.2f} Z:{az:6.2f} m/s²")
         print(f"Gyro   X:{gx:6.2f} Y:{gy:6.2f} Z:{gz:6.2f} rad/s")
         print(f"Mag    X:{mx:6.2f} Y:{my:6.2f} Z:{mz:6.2f} µT")
 
     def print_orientation(self):
-        """Print orientation data (requires rotation vector enabled)."""
+        """Print orientation data (the rotation vector is enabled automatically)."""
         roll, pitch, yaw = self.euler_angles
         print(f"Roll: {roll:6.2f}°  Pitch: {pitch:6.2f}°  Yaw: {yaw:6.2f}°")
 
