@@ -658,7 +658,7 @@ Scans the I2C bus and reports every device address found, a candidate device
 name based on a built-in address lookup table, and a confirmed device name read
 directly from the hardware via the WHO_AM_I or chip ID register.
 
-Covers all on-board devices (ICM-20948 IMU, BME680, APDS9999) as well as a
+Covers all on-board devices (BNO085 IMU, BME680, APDS9999) as well as a
 wide range of common QWIIC breakout modules.
 
 ```python
@@ -676,8 +676,7 @@ scanner.deinit()
 Each found device prints as two lines:
 
 ```text
-  0x69  ICM-20948 (IMU)
-        WHO_AM_I @ 0x00: 0xEA → ICM-20948
+  0x4A  ADS1x15 (ADC, ADDR SDA) / BNO085 (IMU, default)
 ```
 
 - The first line shows the hex address and the candidate name from the address
@@ -1027,7 +1026,7 @@ BND ||                      <- orange bar, width = bend amount
    D3=wave   TILT=vol
 ```
 
-Requires the ICM20948 IMU (on-board) and an APDS9999 proximity breakout
+Requires the BNO085 IMU (Ruler baseboard) and an APDS9999 proximity breakout
 connected to the QWIIC connector.
 
 ```python
