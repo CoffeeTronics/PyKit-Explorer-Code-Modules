@@ -61,9 +61,15 @@ sd.append_text("log.txt", "Another line\\n")
         self._mount = mount_point
         self._spi = busio.SPI(board.SD_SCK, board.SD_MOSI, board.SD_MISO)
         self._cs  = digitalio.DigitalInOut(board.SD_CS)
-        sdcard = adafruit_sdcard.SDCard(self._spi, self._cs)
-        vfs = storage.VfsFat(sdcard)
-        storage.mount(vfs, mount_point)
+        try:
+            sdcard = adafruit_sdcard.SDCard(self._spi, self._cs)
+            vfs = storage.VfsFat(sdcard)
+            storage.mount(vfs, mount_point)
+        except Exception:
+            # Release the pins so SDCard() can be retried (e.g. after inserting a card)
+            self._cs.deinit()
+            self._spi.deinit()
+            raise
 
     def _path(self, filename: str) -> str:
         """Join the mount point and filename."""
@@ -138,16 +144,21 @@ sd.log_csv("temp.csv", [time.monotonic(), 24.5, 65.2])
             has_led = False
 
         print(f"Logging temperature to {self._path(filename)}")
-        while True:
-            t = microcontroller.cpu.temperature
-            print(f"Temperature = {t:.1f} °C")
-            with open(self._path(filename), "a") as f:
-                if has_led:
-                    led.value = True
-                f.write(f"{t:.1f}\n")
-                if has_led:
-                    led.value = False
-            time.sleep(1)
+        try:
+            while True:
+                t = microcontroller.cpu.temperature
+                print(f"Temperature = {t:.1f} °C")
+                with open(self._path(filename), "a") as f:
+                    if has_led:
+                        led.value = True
+                    f.write(f"{t:.1f}\n")
+                    if has_led:
+                        led.value = False
+                time.sleep(1)
+        finally:
+            # Release the LED so board.LED can be used again after Ctrl-C
+            if has_led:
+                led.deinit()
 
     # -- Filesystem utilities ------------------------------------------------
 

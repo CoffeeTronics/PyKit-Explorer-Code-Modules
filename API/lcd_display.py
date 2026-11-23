@@ -73,7 +73,7 @@ DISPLAY_WIDTH = 240
 DISPLAY_HEIGHT = 135
 lcd = LCDDisplay()
 lcd.backlight_on()
-bg_group = lcd.fill_screen(0x001F)            # solid blue background
+bg_group = lcd.fill_screen(0x0000FF)          # solid blue background
 sprite_group = lcd.load_sprite("/Images/Meatball_32x30_16color.bmp", 32, 30)
 sprite_group.x = (DISPLAY_WIDTH - 32) // 2  # center horizontally
 sprite_group.y = (DISPLAY_HEIGHT - 30) // 2  # center vertically
@@ -85,6 +85,8 @@ while True:
     """
 
     def __init__(self):
+        self._velocity = {}      # id(group) -> [vx, vy] for bounce_sprite()
+
         # Backlight controlled via board.LCD_BL (PA06)
         self._backlight = digitalio.DigitalInOut(board.LCD_BL)
         self._backlight.direction = digitalio.Direction.OUTPUT
@@ -349,11 +351,12 @@ while True:
     # -- Background ----------------------------------------------------------
 
     def fill_screen(self, color_565: int = 0x0000):
-        """Fill the entire screen with a 16-bit RGB565 colour.
+        """Fill the entire screen with a solid colour.
 
         Parameters
         ----------
-        color_565 : 16-bit colour, e.g. 0xF800 = red, 0x001F = blue
+        color_565 : 24-bit 0xRRGGBB colour, e.g. 0xFF0000 = red, 0x0000FF = blue
+                    (name kept for compatibility; displayio palettes take RGB888)
 
         Returns the root Group that was applied — you can append more elements.
         """
@@ -413,14 +416,14 @@ while True:
                       delay: float = 0.05):
         """Move a sprite group with wall-bouncing physics — single frame.
 
-        Maintains velocity state internally on the group object.  Call this
+        Maintains velocity state internally (per group, on this LCDDisplay).  Call this
         every loop iteration to animate the sprite.
 
         Parameters
         ----------
         group            : the displayio.Group to move
         sprite_w, sprite_h : sprite dimensions (for boundary checking)
-        dx, dy           : initial pixel velocity (stored on group after first call)
+        dx, dy           : initial pixel velocity (remembered after the first call)
         delay            : optional sleep per call (set 0 for time-managed loops)
 
     Example - Bounce a sprite around the screen
@@ -452,25 +455,23 @@ while True:
 
         """
 
-        if not hasattr(group, "_vx"):
-            group._vx = dx
-            group._vy = dy
+        v = self._velocity.setdefault(id(group), [dx, dy])
 
-        group.x += group._vx
-        group.y += group._vy
+        group.x += v[0]
+        group.y += v[1]
 
         if group.x >= WIDTH - sprite_w:
             group.x = WIDTH - sprite_w
-            group._vx = -abs(group._vx)
+            v[0] = -abs(v[0])
         if group.x <= 0:
             group.x = 0
-            group._vx = abs(group._vx)
+            v[0] = abs(v[0])
         if group.y >= HEIGHT - sprite_h:
             group.y = HEIGHT - sprite_h
-            group._vy = -abs(group._vy)
+            v[1] = -abs(v[1])
         if group.y <= 0:
             group.y = 0
-            group._vy = abs(group._vy)
+            v[1] = abs(v[1])
 
         if delay:
             time.sleep(delay)
@@ -498,6 +499,7 @@ while True:
         displayio.release_displays()
         self._spi.deinit()
         self._backlight.deinit()
+        self._velocity.clear()
 
 
 class ScrollLabel:
@@ -584,6 +586,7 @@ while True:
         self._pos        = 0
         self._until      = 0.0
         self._next_step  = 0.0
+        self._last_shown = True
 
     def set(self, text: str):
         """Display *text*, scrolling if longer than scroll_width.
@@ -599,6 +602,8 @@ while True:
         self._pos       = 0
         self._next_step = 0.0
         self._lbl.hidden = False
+        # A scrolling message may not expire before its last window is shown
+        self._last_shown = len(text) <= self._scroll_width
 
         now = time.monotonic()
         if len(text) > self._scroll_width:
@@ -619,7 +624,7 @@ while True:
         -------
         True while a message is being displayed, False when it has expired.
         """
-        if not self._msg or now >= self._until:
+        if not self._msg or (now >= self._until and self._last_shown):
             self._msg        = ""
             self._lbl.hidden = True
             return False
@@ -628,6 +633,8 @@ while True:
             self._lbl.text = self._msg
         elif now >= self._next_step:
             self._lbl.text = self._msg[self._pos:self._pos + self._scroll_width]
+            if self._pos == len(self._msg) - self._scroll_width:
+                self._last_shown = True
             self._pos      = min(self._pos + 1,
                                  len(self._msg) - self._scroll_width)
             self._next_step = now + self._scroll_interval
