@@ -1,9 +1,13 @@
 """
 neopixels.py — NeoPixel RGB LED Strip
 ========================================
-Board: Ruler Baseboard
+Board: Dev Board + Ruler Baseboard
 
-Controls the 5 NeoPixel RGB LEDs on the baseboard via board.NEOPIX.
+Controls the NeoPixel RGB LED chain on board.NEOPIXEL:
+  pixel 0     — on the dev board
+  pixels 1-4  — on the Ruler baseboard (chained after the dev-board pixel)
+With the baseboard attached the chain has 5 LEDs; the dev board on its own
+has 1 (use NeoPixels(num_pixels=1)).
 
 Use this module for:
   - Status indicators (colours per state)
@@ -44,12 +48,13 @@ class Colors:
 
 
 class NeoPixels:
-    """Drive the 5 NeoPixel LEDs on the Ruler baseboard.
+    """Drive the NeoPixel chain: pixel 0 on the dev board, pixels 1-4 on the baseboard.
 
     Parameters
     ----------
-    pin         : NeoPixel data pin  (default board.NEOPIX)
-    num_pixels  : number of LEDs     (default 5)
+    pin         : NeoPixel data pin  (default board.NEOPIXEL)
+    num_pixels  : number of LEDs     (default 5 = dev board + baseboard;
+                                      use 1 for the dev board on its own)
     brightness  : global brightness  (default 0.1, range 0.0–1.0)
 
     Example - Basic usage: fill, set individual pixels, and rainbow cycle
@@ -62,7 +67,7 @@ while True:
     time.sleep(1)
     px.set(2, Colors.GREEN)      # pixel 2 green only
     time.sleep(1)
-    px.set(3, OFF)      # pixel 1 off
+    px.set(3, OFF)               # pixel 3 off
     time.sleep(1)
     px.rainbow_cycle()    # blocking rainbow animation
     
