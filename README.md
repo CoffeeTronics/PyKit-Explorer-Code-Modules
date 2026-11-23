@@ -246,6 +246,8 @@ from neopixels  import NeoPixels, Colors, OFF
 imu = IMUSensor()
 px  = NeoPixels()
 
+imu.enable_accelerometer()
+
 while True:
     direction = imu.tilt_direction()
     if direction == "LEFT":
@@ -272,6 +274,8 @@ from neopixels import NeoPixels, Colors, OFF
 
 imu = IMUSensor()
 px  = NeoPixels()
+
+imu.enable_accelerometer()
 
 while True:
     imu.print_all()
