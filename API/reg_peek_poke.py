@@ -25,15 +25,15 @@ Use this module for:
   - Reading raw sensor output registers without a full driver
   - Teaching students how register-level I2C / SPI communication works
 
-Example — I2C (ICM-20948 IMU at 0x69)
----------------------------------------
+Example — I2C (BME680 breakout on the QWIIC connector, address 0x77)
+--------------------------------------------------------------------
 import pykit_explorer
 from reg_peek_poke import I2CDevice
-imu = I2CDevice(0x69)
-imu.peek(0x00)           # WHO_AM_I — should return 0xEA
-imu.dump(0x00, 0x06)     # Dump first 7 registers
-imu.poke(0x06, 0x01)     # Write 0x01 to PWR_MGMT_1
-imu.deinit()
+bme = I2CDevice(0x77)
+bme.peek(0xD0)           # Chip ID — should return 0x61 (BME680)
+bme.dump(0x70, 0x74)     # Dump the control registers
+bme.poke(0x72, 0x01)     # ctrl_hum: humidity oversampling x1
+bme.deinit()
 
 Example — SPI
 --------------
@@ -75,19 +75,19 @@ class I2CDevice:
 
     Parameters
     ----------
-    address  : 7-bit I2C address of the target device (e.g. 0x69)
+    address  : 7-bit I2C address of the target device (e.g. 0x77)
     scl      : SCL pin (default board.SCL)
     sda      : SDA pin (default board.SDA)
 
-    Example - Read and write registers on an I2C device (e.g. ICM-20948 IMU at 0x69)
+    Example - Read and write registers on an I2C device (e.g. BME680 at 0x77)
     -------
 import pykit_explorer
 from reg_peek_poke import I2CDevice
-imu = I2CDevice(0x69)
-imu.peek(0x00)           # Read WHO_AM_I → 0xEA on ICM-20948
-imu.poke(0x06, 0x01)     # Write PWR_MGMT_1 to wake the IMU from sleep
-imu.dump(0x00, 0x0F)     # Dump first 16 registers
-imu.deinit()
+bme = I2CDevice(0x77)
+bme.peek(0xD0)           # Read the chip ID → 0x61 on a BME680
+bme.poke(0x72, 0x01)     # ctrl_hum: humidity oversampling x1 (read back to confirm)
+bme.dump(0x70, 0x74)     # Dump the control registers
+bme.deinit()
     """
 
     def __init__(self, address: int, scl=board.SCL, sda=board.SDA):

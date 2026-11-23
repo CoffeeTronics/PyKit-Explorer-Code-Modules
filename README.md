@@ -709,20 +709,20 @@ Both `I2CDevice` and `SPIDevice` expose the same interface:
 Values are always shown as hex, decimal, and binary so they can be read
 directly against a datasheet register map.
 
-**I2C example — ICM-20948 IMU at address 0x69:**
+**I2C example — BME680 breakout (QWIIC connector) at address 0x77:**
 
 ```python
 import pykit_explorer
 
 from reg_peek_poke import I2CDevice
 
-imu = I2CDevice(0x69)
+bme = I2CDevice(0x77)
 
-imu.peek(0x00)           # Read WHO_AM_I — should return 0xEA
-imu.dump(0x00, 0x06)     # Dump the first 7 registers
-imu.poke(0x06, 0x01)     # Write PWR_MGMT_1 to wake the IMU from sleep
+bme.peek(0xD0)           # Read the chip ID — should return 0x61 (BME680)
+bme.dump(0x70, 0x74)     # Dump the control registers
+bme.poke(0x72, 0x01)     # ctrl_hum: humidity oversampling x1 (read back to confirm)
 
-imu.deinit()
+bme.deinit()
 ```
 
 **SPI example — 25AA040A EEPROM read/write using `SPIBus`:**
