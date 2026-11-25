@@ -137,12 +137,14 @@ dac.sweep()         # sweep from 0 to 3.3 V and back (blocking)
         step_v  : voltage increment per step
         delay   : seconds between steps
         """
-        v = start_v
         direction = 1 if end_v >= start_v else -1
-        while (direction == 1 and v <= end_v) or (direction == -1 and v >= end_v):
-            self.voltage = v
+        # Count whole steps instead of adding floats up: repeated additions
+        # drift (on CircuitPython 11, 0 + 0.1 x 33 = 3.300001 > 3.3 and the
+        # last step was skipped).
+        steps = int(abs(end_v - start_v) / step_v + 1e-4)
+        for i in range(steps + 1):
+            self.voltage = start_v + direction * i * step_v
             time.sleep(delay)
-            v += direction * step_v
 
     def deinit(self):
         self._dac.deinit()
